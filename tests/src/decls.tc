@@ -1,0 +1,31 @@
+int i;
+char c;
+char *s;
+int a[2];
+int b[4][5];
+void *v;
+void foo(int n);
+void *NULL;
+
+void memcpy(void *dest, void *source, int n) {
+    int i; char *src; char *dst;
+    src = (char*)source;
+    dst = (char*)dest;
+    i = 0;
+    while (i < n) {
+        dst[i] = src[i];
+        i = i + 1;
+    }
+}
+
+void main() {
+    s = (char*)mcmalloc(14);
+    memcpy((void*)s, (void*)(char*)"Hello, world!", 14);
+    foo(14);
+    print_s((char*)v);
+}
+
+void foo(int n) {
+    if (v == NULL) v = mcmalloc(n);
+    memcpy(v, (void*)s, n);
+}

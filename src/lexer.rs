@@ -4,6 +4,42 @@ use std::{
     io::{BufReader, ErrorKind, Read, Result},
 };
 
+pub struct Tokeniser {
+    reader: Reader,
+}
+
+impl Tokeniser {
+    pub fn from_path(fp: &str) -> Result<Self> {
+        let f = File::open(fp)?;
+        let reader = Reader::from_file(f)?;
+        Ok(Self { reader })
+    }
+
+    fn invalid(&self, c: char, line: u32, col: u32) -> Result<Token> {
+        println!(
+            "Lexing error: unrecognised character {} at {}:{}",
+            c, line, col
+        );
+        Ok(Token::new(Category::Invalid, None, line, col))
+    }
+
+    pub fn next(&mut self) -> Result<Token> {
+        let line = self.reader.line;
+        let col = self.reader.col;
+        if self.reader.hasNext() {
+            let c = self.reader.next()?;
+
+            let tok = match c {
+                '+' => Token::new(Category::Plus, None, line, col),
+                _ => self.invalid(c, line, col)?,
+            };
+            Ok(tok)
+        } else {
+            Ok(Token::new(Category::Eof, None, line, col))
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum Category {
     Identifier,
@@ -50,13 +86,11 @@ pub enum Category {
     Invalid,
 }
 
-pub type Position = (u32, u32);
-
 #[derive(Clone)]
 pub struct Token {
     category: Category,
     data: String,
-    position: Position, // line, col
+    position: (u32, u32), // line, col
 }
 
 impl Token {
@@ -130,7 +164,7 @@ impl Reader {
         self.buf[1] == 0
     }
 
-    pub fn pos(&self) -> Position {
+    pub fn pos(&self) -> (u32, u32) {
         (self.line, self.col)
     }
 }
