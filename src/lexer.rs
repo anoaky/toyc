@@ -113,6 +113,12 @@ impl Reader {
             Err(err) if err.kind() == ErrorKind::UnexpectedEof => self.buf[1] = 0, // end of file
             Err(err) => return Err(err),
         }
+        if self.buf[0] as char == '\n' {
+            self.line += 1;
+            self.col = 1;
+        } else {
+            self.col += 1;
+        }
         Ok(self.buf[0] as char)
     }
 
@@ -122,5 +128,44 @@ impl Reader {
 
     pub fn hasNext(&self) -> bool {
         self.buf[1] == 0
+    }
+
+    pub fn pos(&self) -> Position {
+        (self.line, self.col)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::lexer::Reader;
+    use std::{fs::File, io::Result};
+
+    #[test]
+    fn check_next() -> Result<()> {
+        let mut reader = Reader::from_file(File::open("tests/src/decls.tc")?)?;
+        assert_eq!(reader.next()?, 'i');
+        Ok(())
+    }
+
+    #[test]
+    fn check_peek() -> Result<()> {
+        let mut reader = Reader::from_file(File::open("tests/src/decls.tc")?)?;
+        assert_eq!(reader.peek(), 'i');
+        assert_eq!(reader.next()?, 'i');
+        assert_eq!(reader.peek(), 'n');
+        Ok(())
+    }
+
+    #[test]
+    fn check_pos() -> Result<()> {
+        let mut reader = Reader::from_file(File::open("tests/src/decls.tc")?)?;
+        assert_eq!(reader.pos(), (1, 1));
+        reader.next()?;
+        assert_eq!(reader.pos(), (1, 2));
+        while reader.next()? != ';' {}
+        assert_eq!(reader.pos(), (1, 7));
+        reader.next()?;
+        assert_eq!(reader.pos(), (2, 1));
+        Ok(())
     }
 }
