@@ -23,6 +23,21 @@ impl Tokeniser {
         Ok(Token::new(Category::Invalid, None, line, col))
     }
 
+    fn try_read_int(&mut self, data: String) -> Result<Token> {
+        if !self.reader.peek().is_ascii_digit() {
+            Ok(Token::new(
+                Category::IntLiteral,
+                Some(data),
+                self.reader.line,
+                self.reader.col,
+            ))
+        } else {
+            let mut data = data.clone();
+            data.push(self.reader.next()?);
+            self.try_read_int(data)
+        }
+    }
+
     fn try_read_keyword(&mut self, data: String, keywords: Vec<String>) -> Result<Token> {
         use Category::*;
         let filtered: Vec<String> = keywords
@@ -101,6 +116,7 @@ impl Tokeniser {
                         "break".to_string(),
                     ],
                 )?,
+                _ if c.is_ascii_digit() => self.try_read_int(c.to_string())?,
                 _ => self.invalid(c, line, col)?,
             };
             Ok(tok)
