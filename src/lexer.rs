@@ -23,10 +23,10 @@ impl Tokeniser {
         Ok(Token::new(Category::Invalid, None, line, col))
     }
 
-    pub fn next(&mut self) -> Result<Token> {
+    pub fn next_token(&mut self) -> Result<Token> {
         let line = self.reader.line;
         let col = self.reader.col;
-        if self.reader.hasNext() {
+        if self.reader.has_next() {
             let c = self.reader.next()?;
 
             let tok = match c {
@@ -40,7 +40,7 @@ impl Tokeniser {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Category {
     Identifier,
     Assign,
@@ -108,6 +108,10 @@ impl Token {
             },
         }
     }
+
+    pub fn category(&self) -> Category {
+        self.category
+    }
 }
 
 impl fmt::Display for Token {
@@ -160,8 +164,8 @@ impl Reader {
         self.buf[1] as char
     }
 
-    pub fn hasNext(&self) -> bool {
-        self.buf[1] == 0
+    pub fn has_next(&self) -> bool {
+        self.buf[1] != 0
     }
 
     pub fn pos(&self) -> (u32, u32) {
