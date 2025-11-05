@@ -23,6 +23,46 @@ impl Tokeniser {
         Ok(Token::new(Category::Invalid, None, line, col))
     }
 
+    fn try_read_keyword(&mut self, data: String, keywords: Vec<String>) -> Result<Token> {
+        use Category::*;
+        let filtered: Vec<String> = keywords
+            .iter()
+            .filter(|&s| s.len() >= data.len() && s.starts_with(&data))
+            .cloned()
+            .collect();
+        if !self.reader.has_next() || !is_valid_ident(self.reader.peek()) {
+            let category = match data.as_str() {
+                "int" => Int,
+                "void" => Void,
+                "char" => Char,
+                "if" => If,
+                "else" => Else,
+                "while" => While,
+                "return" => Return,
+                "struct" => Struct,
+                "sizeof" => Sizeof,
+                "continue" => Continue,
+                "break" => Break,
+                "include" => Include,
+                _ => Identifier,
+            };
+            if category == Identifier {
+                Ok(Token::new(
+                    category,
+                    Some(data),
+                    self.reader.line,
+                    self.reader.col,
+                ))
+            } else {
+                Ok(Token::blank(category, self.reader.line, self.reader.col))
+            }
+        } else {
+            let mut new_data = data.clone();
+            new_data.push(self.reader.next()?);
+            self.try_read_keyword(new_data, filtered)
+        }
+    }
+
     pub fn next_token(&mut self) -> Result<Token> {
         use Category::*;
         let line = self.reader.line;
@@ -45,6 +85,22 @@ impl Tokeniser {
                 '*' => Token::blank(Asterisk, line, col),
                 '.' => Token::blank(Dot, line, col),
                 _ if c.is_ascii_whitespace() => self.next_token()?,
+                _ if is_valid_ident_start(c) => self.try_read_keyword(
+                    c.to_string(),
+                    vec![
+                        "if".to_string(),
+                        "int".to_string(),
+                        "void".to_string(),
+                        "char".to_string(),
+                        "else".to_string(),
+                        "while".to_string(),
+                        "return".to_string(),
+                        "struct".to_string(),
+                        "sizeof".to_string(),
+                        "continue".to_string(),
+                        "break".to_string(),
+                    ],
+                )?,
                 _ => self.invalid(c, line, col)?,
             };
             Ok(tok)
@@ -52,6 +108,14 @@ impl Tokeniser {
             Ok(Token::new(Category::Eof, None, line, col))
         }
     }
+}
+
+fn is_valid_ident_start(c: char) -> bool {
+    c.is_ascii_alphabetic() || c == '_'
+}
+
+fn is_valid_ident(c: char) -> bool {
+    c.is_ascii_alphanumeric() || c == '_'
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
