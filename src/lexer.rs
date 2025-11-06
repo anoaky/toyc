@@ -99,6 +99,54 @@ impl Tokeniser {
                 '%' => Token::blank(Rem, line, col),
                 '*' => Token::blank(Asterisk, line, col),
                 '.' => Token::blank(Dot, line, col),
+                '=' => {
+                    if self.reader.peek() == '=' {
+                        self.reader.next()?;
+                        Token::blank(Eq, line, col)
+                    } else {
+                        Token::blank(Assign, line, col)
+                    }
+                }
+                '&' => {
+                    if self.reader.peek() == '&' {
+                        self.reader.next()?;
+                        Token::blank(LogAnd, line, col)
+                    } else {
+                        Token::blank(And, line, col)
+                    }
+                }
+                '|' => {
+                    if self.reader.peek() == '|' {
+                        self.reader.next()?;
+                        Token::blank(LogOr, line, col)
+                    } else {
+                        self.invalid(c, line, col)?
+                    }
+                }
+                '!' => {
+                    if self.reader.peek() == '=' {
+                        self.reader.next()?;
+                        Token::blank(Ne, line, col)
+                    } else {
+                        self.invalid(c, line, col)?
+                    }
+                }
+                '<' => {
+                    if self.reader.peek() == '=' {
+                        self.reader.next()?;
+                        Token::blank(Le, line, col)
+                    } else {
+                        Token::blank(Lt, line, col)
+                    }
+                }
+                '>' => {
+                    if self.reader.peek() == '=' {
+                        self.reader.next()?;
+                        Token::blank(Ge, line, col)
+                    } else {
+                        Token::blank(Gt, line, col)
+                    }
+                }
                 _ if c.is_ascii_whitespace() => self.next_token()?,
                 _ if is_valid_ident_start(c) => self.try_read_keyword(
                     c.to_string(),
