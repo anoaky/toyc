@@ -1,3 +1,9 @@
+/*
+0
+OUT
+Hello, world!
+*/
+
 int i;
 char c;
 char *s;

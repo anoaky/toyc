@@ -4,22 +4,36 @@ use std::{
     io::{BufReader, ErrorKind, Read, Result},
 };
 
+use crate::util::CompilerPass;
+
 pub struct Tokeniser {
+    errors: u32,
     reader: Reader,
+}
+
+impl CompilerPass for Tokeniser {
+    fn inc_error(&mut self) {
+        self.errors += 1;
+    }
+
+    fn num_errors(&self) -> u32 {
+        self.errors
+    }
 }
 
 impl Tokeniser {
     pub fn from_path(fp: &str) -> Result<Self> {
         let f = File::open(fp)?;
         let reader = Reader::from_file(f)?;
-        Ok(Self { reader })
+        Ok(Self { errors: 0, reader })
     }
 
-    fn invalid(&self, c: char, line: u32, col: u32) -> Result<Token> {
+    fn invalid(&mut self, c: char, line: u32, col: u32) -> Result<Token> {
         println!(
             "Lexing error: unrecognised character {} at {}:{}",
             c, line, col
         );
+        self.inc_error();
         Ok(Token::new(Category::Invalid, None, line, col))
     }
 
