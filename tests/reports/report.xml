@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<tests>
-    <test name="decls" expected="0" component="lexer" actual="250"/>
-    <overview component="lexer" passed="0" total="1"/>
-    <overview component="parser" passed="0" total="0"/>
-    <overview component="sem" passed="0" total="0"/>
-    <overview component="codegen" passed="0" total="0"/>
-    <overview component="regalloc" passed="0" total="0"/>
-</tests>
