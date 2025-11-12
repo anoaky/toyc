@@ -128,6 +128,31 @@ impl Tokeniser {
         }
     }
 
+    fn skip_line(&mut self) -> Result<()> {
+        if !self.reader.has_next() || self.reader.next()? == '\n' {
+            Ok(())
+        } else {
+            self.skip_line()
+        }
+    }
+
+    fn skip_long_comment(&mut self, mut buffer: String) -> Result<Option<Token>> {
+        if !self.reader.has_next() {
+            return Ok(Some(self.invalid(
+                buffer.as_bytes()[buffer.len() - 1] as char,
+                self.reader.line,
+                self.reader.col,
+            )?));
+        }
+        let c = self.reader.next()?;
+        if buffer.ends_with('*') && c == '/' {
+            Ok(None)
+        } else {
+            buffer.push(c);
+            self.skip_long_comment(buffer)
+        }
+    }
+
     pub fn next_token(&mut self) -> Result<Token> {
         use Category::*;
         let line = self.reader.line;
@@ -198,6 +223,20 @@ impl Tokeniser {
                         Token::blank(Gt, line, col)
                     }
                 }
+                '/' => match self.reader.peek() {
+                    '/' => {
+                        self.skip_line()?;
+                        self.next_token()?
+                    }
+                    '*' => {
+                        self.reader.next()?;
+                        match self.skip_long_comment("".to_owned())? {
+                            Some(t) => t,
+                            None => self.next_token()?,
+                        }
+                    }
+                    _ => Token::blank(Div, line, col),
+                },
                 _ if c.is_ascii_whitespace() => self.next_token()?,
                 _ if is_valid_ident_start(c) => self.try_read_keyword(
                     c.to_string(),
