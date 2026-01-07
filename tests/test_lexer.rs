@@ -1,5 +1,6 @@
 use std::{
-    io::Result,
+    fs::File,
+    io::{BufRead, BufReader, Result},
     path::{Path, PathBuf},
 };
 
@@ -28,6 +29,26 @@ fn lexer(
     #[base_dir = "tests/resources/source/"]
     #[files("*.tc")]
     path: PathBuf,
-) {
-    assert_snapshot!(test_lexer(path.as_path()));
+) -> Result<()> {
+    let mut reader = BufReader::new(File::open(&path)?);
+    let mut line = String::new();
+    reader.read_line(&mut line)?;
+    let expected_exit_code = if line.starts_with("/*") {
+        // extract exit code
+        line.clear();
+        reader.read_line(&mut line)?;
+        line.trim().parse::<u32>().unwrap_or(1)
+    } else if line.starts_with("//") {
+        line.split_off(2).trim().parse::<u32>().unwrap_or(1)
+    } else {
+        0
+    };
+    let lexer_exit_code = if expected_exit_code == LEXER_FAIL {
+        LEXER_FAIL
+    } else {
+        0
+    };
+
+    assert_eq!(lexer_exit_code, test_lexer(path.as_path()));
+    Ok(())
 }
