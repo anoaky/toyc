@@ -450,30 +450,30 @@ mod test {
 
     #[test]
     fn check_next() -> Result<()> {
-        let mut reader = Reader::from_file(File::open("tests/src/decls.tc")?)?;
-        assert_eq!(reader.next()?, 'i');
+        let mut reader = Reader::from_file(File::open("tests/resources/source/decls.tc")?)?;
+        assert_eq!(reader.next()?, '/');
         Ok(())
     }
 
     #[test]
     fn check_peek() -> Result<()> {
-        let mut reader = Reader::from_file(File::open("tests/src/decls.tc")?)?;
-        assert_eq!(reader.peek(), 'i');
-        assert_eq!(reader.next()?, 'i');
-        assert_eq!(reader.peek(), 'n');
+        let mut reader = Reader::from_file(File::open("tests/resources/source/decls.tc")?)?;
+        assert_eq!(reader.peek(), '/');
+        assert_eq!(reader.next()?, '/');
+        assert_eq!(reader.peek(), '*');
         Ok(())
     }
 
     #[test]
     fn check_pos() -> Result<()> {
-        let mut reader = Reader::from_file(File::open("tests/src/decls.tc")?)?;
+        let mut reader = Reader::from_file(File::open("tests/resources/source/decls.tc")?)?;
         assert_eq!(reader.pos(), (1, 1));
         reader.next()?;
         assert_eq!(reader.pos(), (1, 2));
         while reader.next()? != ';' {}
-        assert_eq!(reader.pos(), (1, 7));
+        assert_eq!(reader.pos(), (7, 7));
         reader.next()?;
-        assert_eq!(reader.pos(), (2, 1));
+        assert_eq!(reader.pos(), (8, 1));
         Ok(())
     }
 }
