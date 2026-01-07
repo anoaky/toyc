@@ -14,6 +14,9 @@ pub struct VarDecl {
 }
 
 impl ASTNode for VarDecl {
+    fn type_name(&self) -> &'static str {
+        "VarDecl"
+    }
     fn children(&self) -> Vec<&dyn ASTNode> {
         vec![self.ty.as_ref()]
     }

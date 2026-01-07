@@ -16,6 +16,9 @@ pub enum BaseType {
 }
 
 impl ASTNode for BaseType {
+    fn type_name(&self) -> &'static str {
+        "BaseType"
+    }
     fn children(&self) -> Vec<&dyn ASTNode> {
         vec![]
     }
