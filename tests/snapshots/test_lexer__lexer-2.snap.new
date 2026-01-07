@@ -1,6 +1,0 @@
----
-source: tests/test_lexer.rs
-assertion_line: 32
-expression: test_lexer(path.as_path())
----
-0
