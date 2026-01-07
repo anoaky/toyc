@@ -1,7 +1,15 @@
 #!/bin/zsh
-
-while getopts "o" opt; do
-    case $opt in 
+usage () {
+    echo "Usage: run_tests.sh [options]\nOptions:"
+    echo "\t-o: Run tests and open the generated report in your default browser"
+    echo "\t-h: Display this information and exit"
+}
+while getopts "ho" opt; do
+    case $opt in
+        h)
+            usage
+            exit 0
+            ;;
         o)
             showreport=1
             ;;
