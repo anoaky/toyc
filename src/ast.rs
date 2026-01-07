@@ -89,23 +89,27 @@ impl<'a> ASTPrinter<'a> {
 
 #[cfg(test)]
 mod test {
-    use std::boxed;
-
     use insta::assert_snapshot;
 
     use super::*;
 
-    #[test]
-    fn test_base_type_print() -> std::io::Result<()> {
+    pub fn format_program(node: &dyn ASTNode) -> Result<String, std::io::Error> {
         let mut out = Vec::new();
         let mut printer = ASTPrinter::new(&mut out);
-        let t1 = BaseType::INT;
-        printer.visit(&t1)?;
+        printer.visit(node)?;
 
         let s = match String::from_utf8(out) {
             Ok(s) => s,
             Err(_) => panic!("Failed to convert output"),
         };
+        Ok(s)
+    }
+
+    #[test]
+    fn test_base_type_print() -> std::io::Result<()> {
+        let t1 = BaseType::INT;
+
+        let s = format_program(&t1)?;
         assert_eq!(s, "INT");
 
         Ok(())
@@ -113,16 +117,10 @@ mod test {
 
     #[test]
     fn test_var_decl_print() -> std::io::Result<()> {
-        let mut out = Vec::new();
-        let mut printer = ASTPrinter::new(&mut out);
         let t1 = BaseType::INT;
         let vd = VarDecl::new(Box::new(t1), "x".to_string());
-        printer.visit(&vd)?;
 
-        let s = match String::from_utf8(out) {
-            Ok(s) => s,
-            Err(_) => panic!("Failed to convert output"),
-        };
+        let s = format_program(&vd)?;
 
         assert_snapshot!(s, @"VarDecl(INT, x)");
         Ok(())
@@ -130,8 +128,6 @@ mod test {
 
     #[test]
     fn test_program_print() -> std::io::Result<()> {
-        let mut out = Vec::new();
-        let mut printer = ASTPrinter::new(&mut out);
         let t1 = BaseType::INT;
         let t2 = BaseType::CHAR;
         let t3 = BaseType::INT;
@@ -139,12 +135,8 @@ mod test {
         let vd2 = Box::new(VarDecl::new(Box::new(t2), "y".to_string()));
         let vd3 = Box::new(VarDecl::new(Box::new(t3), "z".to_string()));
         let prog = Program::new(vec![vd1, vd2, vd3]);
-        printer.visit(&prog)?;
 
-        let s = match String::from_utf8(out) {
-            Ok(s) => s,
-            Err(_) => panic!("Failed to convert output"),
-        };
+        let s = format_program(&prog)?;
 
         assert_snapshot!(s, @r"
         Program(
