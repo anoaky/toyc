@@ -6,7 +6,7 @@ pub trait Type: ASTNode {
     fn equals(&self, other: Box<dyn Any>) -> bool;
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BaseType {
     INT,
     CHAR,

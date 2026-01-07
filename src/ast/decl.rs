@@ -31,3 +31,9 @@ impl Decl for VarDecl {
         &self.name
     }
 }
+
+impl VarDecl {
+    pub fn new(ty: Box<dyn Type>, name: String) -> Self {
+        Self { ty, name }
+    }
+}
