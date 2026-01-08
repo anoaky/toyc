@@ -9,6 +9,8 @@ name = "tests"
 [dependencies]
 anyhow = "1.0.100"
 downcast-rs = "2.0.2"
+erased-serde = "0.4.9"
+serde = {version ="1.0.228", features=["derive"]}
 
 [dev-dependencies]
 insta = {version = "1.46.0", features = ["yaml", "glob"]}

@@ -1,12 +1,18 @@
 use std::any::Any;
 
+use downcast_rs::impl_downcast;
+use erased_serde::serialize_trait_object;
+use serde::Serialize;
+
 use crate::ast::ASTNode;
 
 pub trait Type: ASTNode {
     fn equals(&self, other: Box<dyn Any>) -> bool;
 }
+impl_downcast!(Type);
+serialize_trait_object!(Type);
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize)]
 pub enum BaseType {
     INT,
     CHAR,
@@ -34,8 +40,9 @@ impl Type for BaseType {
     }
 }
 
+#[derive(Serialize)]
 pub struct ArrayType {
-    pub ty: Box<dyn Type>,
+    pub array_type: Box<dyn Type>,
     pub len: usize,
 }
 
@@ -44,14 +51,14 @@ impl ASTNode for ArrayType {
         "ArrayType"
     }
     fn children(&self) -> Vec<&dyn ASTNode> {
-        vec![self.ty.as_ref()]
+        vec![self.array_type.as_ref()]
     }
 }
 
 impl Type for ArrayType {
     fn equals(&self, other: Box<dyn Any>) -> bool {
         if let Ok(other) = other.downcast::<ArrayType>() {
-            self.len == other.len && self.ty.equals(other.ty)
+            self.len == other.len && self.array_type.equals(other.array_type)
         } else {
             false
         }
@@ -60,7 +67,73 @@ impl Type for ArrayType {
 
 impl ArrayType {
     pub fn new(ty: Box<dyn Type>, len: usize) -> Self {
-        Self { ty, len }
+        Self {
+            array_type: ty,
+            len,
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct PointerType {
+    pub points_to: Box<dyn Type>,
+}
+
+impl ASTNode for PointerType {
+    fn type_name(&self) -> &'static str {
+        "PointerType"
+    }
+
+    fn children(&self) -> Vec<&dyn ASTNode> {
+        vec![self.points_to.as_ref()]
+    }
+}
+
+impl Type for PointerType {
+    fn equals(&self, other: Box<dyn Any>) -> bool {
+        if let Ok(other) = other.downcast::<PointerType>() {
+            self.points_to.equals(other.points_to)
+        } else {
+            false
+        }
+    }
+}
+
+impl PointerType {
+    pub fn new(points_to: Box<dyn Type>) -> Self {
+        Self { points_to }
+    }
+}
+
+#[derive(Serialize)]
+pub struct StructType {
+    pub name: String,
+    pub size: usize,
+}
+
+impl ASTNode for StructType {
+    fn type_name(&self) -> &'static str {
+        "StructType"
+    }
+
+    fn children(&self) -> Vec<&dyn ASTNode> {
+        vec![]
+    }
+}
+
+impl Type for StructType {
+    fn equals(&self, other: Box<dyn Any>) -> bool {
+        if let Ok(other) = other.downcast::<StructType>() {
+            self.name == other.name
+        } else {
+            false
+        }
+    }
+}
+
+impl StructType {
+    pub fn new(name: String) -> Self {
+        Self { name, size: 0 }
     }
 }
 

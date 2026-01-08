@@ -1,0 +1,29 @@
+---
+source: tests/tests.rs
+assertion_line: 89
+expression: ast
+---
+decls:
+  - ty: INT
+    name: i
+  - ty: CHAR
+    name: c
+  - ty:
+      points_to: CHAR
+    name: s
+  - ty:
+      ty: INT
+      len: 2
+    name: a
+  - ty:
+      ty:
+        ty: INT
+        len: 5
+      len: 4
+    name: b
+  - ty:
+      points_to: VOID
+    name: v
+  - ty:
+      points_to: VOID
+    name: "NULL"

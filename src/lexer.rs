@@ -355,7 +355,7 @@ pub enum Category {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Token {
     category: Category,
-    data: String,
+    pub data: String,
     pub position: (u32, u32), // line, col
 }
 

@@ -1,9 +1,9 @@
-use anyhow::{Result, bail};
+use anyhow::{Ok, Result, bail};
 use std::collections::VecDeque;
 
-use crate::ast::decl::VarDecl;
+use crate::ast::decl::{Decl, VarDecl};
 use crate::ast::program::Program;
-use crate::ast::types::{BaseType, Type};
+use crate::ast::types::{ArrayType, BaseType, PointerType, StructType, Type};
 use crate::lexer::Category;
 use crate::{
     lexer::{Category::*, Token, Tokeniser},
@@ -40,6 +40,10 @@ impl Parser {
         })
     }
 
+    pub fn parse(&mut self) -> Result<Program> {
+        self.parse_program()
+    }
+
     fn accept(&self, expected: Vec<Category>) -> bool {
         expected.contains(&self.token.category())
     }
@@ -64,7 +68,8 @@ impl Parser {
         println!(
             "Parsing error: expected {:?} found {:?} at {:?}",
             expected, self.token, self.token.position
-        )
+        );
+        self.inc_error();
     }
 
     fn expect(&mut self, expected: Vec<Category>) -> Result<Token> {
@@ -80,7 +85,7 @@ impl Parser {
     }
 
     fn is_fun(&mut self) -> Result<bool> {
-        if (!self.accept(vec![Struct, Int, Char, Void])) {
+        if !self.accept(vec![Struct, Int, Char, Void]) {
             return Ok(false);
         }
 
@@ -99,7 +104,7 @@ impl Parser {
             Ok(())
         } else {
             match self.tokeniser.next_token() {
-                Ok(t) => {
+                std::result::Result::Ok(t) => {
                     self.token = t;
                     Ok(())
                 }
@@ -110,7 +115,7 @@ impl Parser {
 
     fn load_buffer(&mut self) -> Result<()> {
         match self.tokeniser.next_token() {
-            Ok(t) => {
+            std::result::Result::Ok(t) => {
                 self.buffer.push_back(t);
                 Ok(())
             }
@@ -119,7 +124,7 @@ impl Parser {
     }
 
     fn look_ahead(&mut self, i: usize) -> Result<Token> {
-        while self.buffer.len() < i {
+        while self.buffer.len() <= i {
             self.load_buffer()?;
         }
 
@@ -141,11 +146,62 @@ impl Parser {
 
     fn parse_program(&mut self) -> Result<Program> {
         self.parse_includes()?;
-        let mut decls = vec![];
+        let mut decls: Vec<Box<dyn Decl>> = vec![];
 
-        while self.accept(vec![Struct, Int, Char, Void]) {}
+        while self.accept(vec![Struct, Int, Char, Void]) {
+            if self.token.category() == Struct
+                && self.look_ahead(1)?.category() == Identifier
+                && self.look_ahead(2)?.category() == LBrace
+            {
+                // parse struct decl
+            } else if self.is_fun()? {
+                // parse fun decl / defn
+            } else {
+                decls.push(Box::new(self.parse_vardecl()?));
+                self.expect(vec![Semi])?;
+            }
+        }
 
         self.expect(vec![Eof])?;
         Ok(Program::new(decls))
+    }
+
+    fn parse_struct_type(&mut self) -> Result<StructType> {
+        self.expect(vec![Struct])?;
+        let id = self.expect(vec![Identifier])?;
+        Ok(StructType::new(id.data))
+    }
+
+    fn parse_types(&mut self) -> Result<Box<dyn Type>> {
+        let mut ty: Box<dyn Type> = if self.token.category() == Struct {
+            Box::new(self.parse_struct_type()?)
+        } else {
+            let t = self.expect(vec![Int, Char, Void])?;
+            Box::new(self.convert_token(t))
+        };
+        while self.accept(vec![Asterisk]) {
+            ty = Box::new(PointerType::new(ty));
+            self.next_token()?;
+        }
+        Ok(ty)
+    }
+
+    fn parse_vardecl(&mut self) -> Result<VarDecl> {
+        let mut ty = self.parse_types()?;
+        let id = self.expect(vec![Identifier])?;
+        let mut lens: VecDeque<usize> = VecDeque::new();
+        while self.accept(vec![LBrack]) {
+            self.expect(vec![LBrack])?;
+            let i = self.expect(vec![IntLiteral])?;
+            self.expect(vec![RBrack])?;
+            if i.category() == IntLiteral {
+                lens.push_front(i.data.parse::<usize>()?);
+            }
+        }
+        while !lens.is_empty() {
+            ty = Box::new(ArrayType::new(ty, lens.pop_front().unwrap()));
+        }
+
+        Ok(VarDecl::new(ty, id.data))
     }
 }

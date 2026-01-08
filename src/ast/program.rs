@@ -1,5 +1,8 @@
+use serde::Serialize;
+
 use crate::ast::{ASTNode, decl::Decl};
 
+#[derive(Serialize)]
 pub struct Program {
     decls: Vec<Box<dyn Decl>>,
 }
