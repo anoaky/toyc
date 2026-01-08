@@ -43,7 +43,7 @@ impl Writable for UnboundAst {
             UnboundAst::Literal(l) => l.write(writer)?,
             UnboundAst::Decl(kind) => {
                 kind.write(writer)?;
-                write!(writer, ";\n")?;
+                writeln!(writer, ";")?;
             }
         };
         Ok(())

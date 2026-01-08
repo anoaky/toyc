@@ -19,11 +19,11 @@ impl Writable for DeclKind {
                 write!(writer, " {}", s)?;
             }
             DeclKind::StructTypeDecl(_, name, fields) => {
-                write!(writer, "struct {} {{\n", name)?;
+                writeln!(writer, "struct {} {{", name)?;
                 for field in fields {
                     write!(writer, "\t")?;
                     field.write(writer)?;
-                    write!(writer, ";\n")?;
+                    writeln!(writer, ";")?;
                 }
                 write!(writer, "}}")?;
             }
