@@ -1,4 +1,4 @@
-use std::{any::TypeId, io::Write};
+use std::{any::TypeId, cell::Ref, io::Write};
 
 use downcast_rs::{Downcast, impl_downcast};
 use erased_serde::serialize_trait_object;
@@ -7,16 +7,18 @@ use serde::Serialize;
 use crate::ast::{
     decl::{Decl, VarDecl},
     program::Program,
-    types::{ArrayType, BaseType, PointerType, StructType, Type},
+    types::EType,
 };
 
 pub mod decl;
+pub mod expr;
 pub mod program;
+pub mod stmt;
 pub mod types;
 
 pub trait ASTNode: Downcast + erased_serde::Serialize {
     fn type_name(&self) -> &'static str;
-    fn children(&self) -> Vec<&dyn ASTNode>;
+    fn children(&self) -> Vec<Ref<dyn ASTNode>>;
 }
 impl_downcast!(ASTNode);
 serialize_trait_object!(ASTNode);
@@ -31,28 +33,48 @@ impl<'a> ASTPrinter<'a> {
         Self { writer, tabc: 0 }
     }
 
-    fn format_type(&self, t: &dyn Type) -> String {
-        if let Some(pt) = t.downcast_ref::<PointerType>() {
-            let inner_type = self.format_type(pt.points_to.as_ref());
-            inner_type + "*"
-        } else if let Some(st) = t.downcast_ref::<StructType>() {
-            format!("struct {}", st.name)
-        } else if let Some(at) = t.downcast_ref::<ArrayType>() {
-            let inner_type = self.format_type(at.ty.as_ref());
-            let split_point = inner_type.find("[");
-            match split_point {
-                None => format!("{}[{}]", inner_type, at.len),
-                Some(i) => {
-                    let (l, r) = inner_type.split_at(i);
-                    format!("{}[{}]{}", l, at.len, r)
+    fn format_type(&self, t: &EType) -> String {
+        use EType::*;
+        match t {
+            Int | Char | Void | Unknown | None => format!("{:?}", *t),
+            Pointer(inner) => self.format_type(&*inner.borrow()) + "*",
+            Struct(_, name) => format!("struct {}", name),
+            Array(size, inner) => {
+                let inner_type = self.format_type(&*inner.borrow());
+                let split_point = inner_type.find("[");
+                match split_point {
+                    Option::None => format!("{}[{}]", inner_type, size),
+                    Some(i) => {
+                        let (l, r) = inner_type.split_at(i);
+                        format!("{}[{}]{}", l, size, r)
+                    }
                 }
             }
-        } else if let Some(bt) = t.downcast_ref::<BaseType>() {
-            format!("{:?}", bt)
-        } else {
-            "".to_string()
         }
     }
+
+    // fn format_type(&self, t: &dyn Type) -> String {
+    //     if let Some(pt) = t.downcast_ref::<PointerType>() {
+    //         let inner_type = self.format_type(pt.points_to.as_ref());
+    //         inner_type + "*"
+    //     } else if let Some(st) = t.downcast_ref::<StructType>() {
+    //         format!("struct {}", st.name)
+    //     } else if let Some(at) = t.downcast_ref::<ArrayType>() {
+    //         let inner_type = self.format_type(at.ty.as_ref());
+    //         let split_point = inner_type.find("[");
+    //         match split_point {
+    //             None => format!("{}[{}]", inner_type, at.len),
+    //             Some(i) => {
+    //                 let (l, r) = inner_type.split_at(i);
+    //                 format!("{}[{}]{}", l, at.len, r)
+    //             }
+    //         }
+    //     } else if let Some(bt) = t.downcast_ref::<BaseType>() {
+    //         format!("{:?}", bt)
+    //     } else {
+    //         "".to_string()
+    //     }
+    // }
 
     pub fn visit(&mut self, node: &dyn ASTNode) -> Result<(), std::io::Error> {
         let node_name = node.type_name();
@@ -66,26 +88,21 @@ impl<'a> ASTPrinter<'a> {
 
         match node_name {
             "BaseType" => {
-                let bt = node.downcast_ref::<BaseType>().unwrap();
+                let bt = node.downcast_ref::<EType>().unwrap();
                 write!(self.writer, "{}", self.format_type(bt))?;
             }
             "PointerType" => {
-                let pt = node.downcast_ref::<PointerType>().unwrap();
+                let pt = node.downcast_ref::<EType>().unwrap();
                 write!(self.writer, "{}", self.format_type(pt))?;
             }
-            // "ArrayType" => {
-            //     let at = node.downcast_ref::<ArrayType>().unwrap();
-            //     write!(self.writer, "{},", at.len)?;
-            //     self.visit(at.ty.as_ref())?;
-            // }
             "ArrayType" => {
-                let at = node.downcast_ref::<ArrayType>().unwrap();
+                let at = node.downcast_ref::<EType>().unwrap();
                 write!(self.writer, "{}", self.format_type(at))?;
             }
             "VarDecl" => {
                 let vd = node.downcast_ref::<VarDecl>().unwrap();
-                self.visit(vd.ty())?;
-                write!(self.writer, ", {}", vd.name())?;
+                self.visit(&*vd.ty.borrow())?;
+                write!(self.writer, ", {}", vd.name)?;
             }
             "Program" => {
                 let prog = node.downcast_ref::<Program>().unwrap();
@@ -95,7 +112,7 @@ impl<'a> ASTPrinter<'a> {
                     write!(self.writer, "{}", delim)?;
                     self.lftabs()?;
                     delim = ",";
-                    self.visit(child)?;
+                    self.visit(&*child)?;
                 }
                 self.tabc -= 1;
                 self.lftabs()?;
@@ -105,7 +122,7 @@ impl<'a> ASTPrinter<'a> {
                 for child in node.children() {
                     write!(self.writer, "{}", delim)?;
                     delim = ",";
-                    self.visit(child)?;
+                    self.visit(&*child)?;
                 }
             }
         }
@@ -147,11 +164,13 @@ pub fn format_program(node: &dyn ASTNode) -> Result<String, std::io::Error> {
 mod test {
     use insta::assert_snapshot;
 
+    use crate::rc_ref;
+
     use super::*;
 
     #[test]
     fn test_base_type_print() -> std::io::Result<()> {
-        let t1 = BaseType::INT;
+        let t1 = EType::Int;
 
         let s = format_program(&t1)?;
         assert_eq!(s, "INT");
@@ -161,8 +180,8 @@ mod test {
 
     #[test]
     fn test_var_decl_print() -> std::io::Result<()> {
-        let t1 = BaseType::INT;
-        let vd = VarDecl::new(Box::new(t1), "x".to_string());
+        let t1 = EType::Int;
+        let vd = VarDecl::new(t1, "x".to_string());
 
         let s = format_program(&vd)?;
 
@@ -172,13 +191,13 @@ mod test {
 
     #[test]
     fn test_program_print() -> std::io::Result<()> {
-        let t1 = BaseType::INT;
-        let t2 = BaseType::CHAR;
-        let t3 = BaseType::INT;
-        let vd1 = Box::new(VarDecl::new(Box::new(t1), "x".to_string()));
-        let vd2 = Box::new(VarDecl::new(Box::new(t2), "y".to_string()));
-        let vd3 = Box::new(VarDecl::new(Box::new(t3), "z".to_string()));
-        let prog = Program::new(vec![vd1, vd2, vd3]);
+        let t1 = EType::Int;
+        let t2 = EType::Char;
+        let t3 = EType::Int;
+        let vd1 = VarDecl::new(t1, "x".to_string());
+        let vd2 = VarDecl::new(t2, "y".to_string());
+        let vd3 = VarDecl::new(t3, "z".to_string());
+        let prog = Program::new(vec![rc_ref!(vd1), rc_ref!(vd2), rc_ref!(vd3)]);
 
         let s = format_program(&prog)?;
 

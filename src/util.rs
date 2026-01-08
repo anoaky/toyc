@@ -5,3 +5,19 @@ pub trait CompilerPass {
         self.num_errors() > 0
     }
 }
+
+#[macro_export]
+macro_rules! rc {
+    ( $e:expr ) => {
+        Rc::new($e)
+    };
+}
+
+#[macro_export]
+macro_rules! rc_ref {
+    ( $e:expr ) => {{
+        use std::cell::RefCell;
+        use std::rc::Rc;
+        Rc::new(RefCell::new($e))
+    }};
+}
