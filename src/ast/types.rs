@@ -18,15 +18,6 @@ pub enum Type {
 impl Writable for Type {
     fn write<T: std::io::Write>(&self, writer: &mut T) -> anyhow::Result<()> {
         use Type::*;
-        let mut array_write = |t: Type| -> Result<()> {
-            if let Array(s, inner) = t {
-                inner.write(writer)?;
-                write!(writer, "[{}]", s)?;
-            } else {
-                t.write(writer)?;
-            }
-            Ok(())
-        };
         match self {
             Int | Char | Void | Unknown | None => write!(writer, "{:?}", self)?,
             Pointer(t) => {
@@ -34,7 +25,19 @@ impl Writable for Type {
                 write!(writer, "*")?;
             }
             Struct(s) => write!(writer, "struct {}", s)?,
-            Array(_, _) => array_write(self.clone())?,
+            Array(s, t) => {
+                let mut out = Vec::new();
+                t.write(&mut out)?;
+                let inner_type = String::from_utf8(out)?;
+                let split_point = inner_type.find("[");
+                match split_point {
+                    Option::None => write!(writer, "{}[{}]", inner_type, s)?,
+                    Some(i) => {
+                        let (l, r) = inner_type.split_at(i);
+                        write!(writer, "{}[{}]{}", l, s, r)?;
+                    }
+                };
+            }
         };
         Ok(())
     }
