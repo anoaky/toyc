@@ -1,6 +1,13 @@
-use std::{io::Result, path::Path};
+use anyhow::Result;
+use std::{path::Path, process::ExitCode};
 
-use toyc::lexer::{Category, Token, Tokeniser};
+use toyc::{
+    lexer::{Category, Token, Tokeniser},
+    parser::Parser,
+    util::{CompilerPass, Writable},
+};
+
+const PARSER_FAIL: i32 = 245;
 
 pub fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
@@ -12,6 +19,14 @@ pub fn main() -> Result<()> {
             println!("{}", t);
             t = tokeniser.next_token()?;
         }
+    } else if args[1] == "-parser" {
+        let mut parser = Parser::with_tokeniser(tokeniser)?;
+        let program = parser.parse()?;
+        if parser.has_error() {
+            std::process::exit(PARSER_FAIL);
+        }
+        let mut out = std::io::stdout();
+        program.write(&mut out)?;
     }
     Ok(())
 }
