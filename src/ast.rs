@@ -13,7 +13,7 @@ use serde::Serialize;
 pub use stmt::StmtKind;
 pub use types::Type;
 
-use crate::util::Writable;
+use crate::util::{Writable, Writer};
 
 #[derive(Serialize, Clone)]
 pub enum Ast {
@@ -24,7 +24,7 @@ pub enum Ast {
 }
 
 impl Writable for Ast {
-    fn write<T: Write>(&self, writer: &mut T) -> Result<()> {
+    fn write<T: Write>(&self, writer: &mut Writer<'_, T>) -> Result<()> {
         match self {
             Ast::Program(decls) => {
                 for decl in decls {

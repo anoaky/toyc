@@ -10,7 +10,7 @@ char *s;
 int a[2];
 int b[4][5];
 void *v;
-//void foo(int n);
+void foo(int n);
 void *NULL;
 /*
 void memcpy(void *dest, void *source, int n) {

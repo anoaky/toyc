@@ -1,6 +1,11 @@
+use std::io::Write;
+
 use serde::Serialize;
 
-use crate::{ast::Ast, util::Writable};
+use crate::{
+    ast::Ast,
+    util::{Writable, Writer},
+};
 
 #[derive(Serialize, Clone)]
 pub enum StmtKind {
@@ -24,24 +29,27 @@ pub enum StmtKind {
 }
 
 impl Writable for StmtKind {
-    fn write<T: std::io::Write>(&self, writer: &mut T) -> anyhow::Result<()> {
+    fn write<T: std::io::Write>(&self, writer: &mut Writer<'_, T>) -> anyhow::Result<()> {
         match self {
             Self::Block { decls, stmts } => {
                 writeln!(writer, "{{")?;
+                writer.inctabs();
                 for decl in decls {
-                    write!(writer, "\t")?;
+                    writer.tabs()?;
                     decl.write(writer)?;
                 }
                 for stmt in stmts {
-                    write!(writer, "\t")?;
+                    writer.tabs()?;
                     stmt.write(writer)?;
                 }
+                writer.dectabs();
+                writer.tabs()?;
                 writeln!(writer, "}}")?;
             }
             Self::While { expr, stmt } => {
                 write!(writer, "while (")?;
                 expr.write(writer)?;
-                writeln!(writer, ") ")?;
+                write!(writer, ") ")?;
                 stmt.write(writer)?;
             }
             Self::If { expr, then, els } => {

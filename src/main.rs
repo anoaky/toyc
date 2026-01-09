@@ -4,7 +4,7 @@ use anyhow::Result;
 use toyc::{
     lexer::{Category, Tokeniser},
     parser::Parser,
-    util::{CompilerPass, Writable},
+    util::{CompilerPass, Writable, Writer},
 };
 
 const PARSER_FAIL: i32 = 245;
@@ -26,7 +26,8 @@ pub fn main() -> Result<()> {
             std::process::exit(PARSER_FAIL);
         }
         let mut out = std::io::stdout();
-        program.write(&mut out)?;
+        let mut writer = Writer::new(&mut out);
+        program.write(&mut writer)?;
     } else {
         usage();
     }

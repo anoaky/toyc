@@ -3,7 +3,7 @@ use std::io::Write;
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::util::Writable;
+use crate::util::{Writable, Writer};
 
 #[derive(Serialize, Clone)]
 pub enum Literal {
@@ -13,7 +13,7 @@ pub enum Literal {
 }
 
 impl Writable for Literal {
-    fn write<T: Write>(&self, writer: &mut T) -> Result<()> {
+    fn write<T: Write>(&self, writer: &mut Writer<'_, T>) -> Result<()> {
         match self {
             Literal::Int(i) => write!(writer, "{}", i),
             Literal::Char(c) => write!(writer, "'{}'", c),

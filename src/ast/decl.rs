@@ -1,7 +1,12 @@
+use std::io::Write;
+
 use serde::Serialize;
 
 use super::types::Type;
-use crate::{ast::Ast, util::Writable};
+use crate::{
+    ast::Ast,
+    util::{Writable, Writer},
+};
 
 #[derive(Serialize, Clone)]
 pub enum DeclKind {
@@ -12,7 +17,7 @@ pub enum DeclKind {
 }
 
 impl Writable for DeclKind {
-    fn write<T: std::io::Write>(&self, writer: &mut T) -> anyhow::Result<()> {
+    fn write<T: std::io::Write>(&self, writer: &mut Writer<'_, T>) -> anyhow::Result<()> {
         match self {
             DeclKind::VarDecl(t, s) => {
                 t.write(writer)?;

@@ -40,9 +40,12 @@ impl CompilerPass for Parser {
 */
 
 fn infix_precedence(category: Category) -> (u8, u8) {
+    use Category::*;
     match category {
-        Category::Assign => (2, 1),
-        Category::Plus | Category::Minus => (11, 12),
+        Assign => (2, 1),
+        Lt | Le | Gt | Ge => (9, 10),
+        Plus | Minus => (11, 12),
+        Asterisk | Div | Rem => (13, 14),
         _ => panic!("No precedence for category {:?}", category),
     }
 }
@@ -217,7 +220,9 @@ impl Parser {
         let mut lhs = self.parse_atom()?;
         loop {
             use Category::*;
-            if !self.accept_any(vec![Plus, Minus, Assign]) {
+            if !self.accept_any(vec![
+                Plus, Minus, Assign, Asterisk, Div, Rem, Lt, Le, Gt, Ge,
+            ]) {
                 break;
             }
             let op = self.token.category();
@@ -228,11 +233,22 @@ impl Parser {
             }
             self.next_token()?;
             let rhs = self.parse_expr(rprec)?;
-            lhs = match op {
-                Plus => ExprKind::BinOp(Box::new(lhs), OpKind::Add, Box::new(rhs)),
-                Minus => ExprKind::BinOp(Box::new(lhs), OpKind::Sub, Box::new(rhs)),
-                Assign => ExprKind::Assign(Box::new(lhs), Box::new(rhs)),
-                _ => unreachable!(),
+            lhs = if op == Assign {
+                ExprKind::Assign(Box::new(lhs), Box::new(rhs))
+            } else {
+                let op = match op {
+                    Plus => OpKind::Add,
+                    Minus => OpKind::Sub,
+                    Asterisk => OpKind::Mul,
+                    Div => OpKind::Div,
+                    Rem => OpKind::Mod,
+                    Lt => OpKind::Lt,
+                    Le => OpKind::Le,
+                    Gt => OpKind::Gt,
+                    Ge => OpKind::Ge,
+                    _ => unreachable!(),
+                };
+                ExprKind::BinOp(Box::new(lhs), op, Box::new(rhs))
             }
         }
         Ok(lhs)

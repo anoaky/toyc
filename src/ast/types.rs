@@ -1,9 +1,9 @@
-use std::fmt::Display;
+use std::{fmt::Display, io::Write};
 
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::util::Writable;
+use crate::util::{Writable, Writer};
 
 #[derive(Serialize, Clone, Debug)]
 pub enum Type {
@@ -24,7 +24,7 @@ impl Display for Type {
 }
 
 impl Writable for Type {
-    fn write<T: std::io::Write>(&self, writer: &mut T) -> Result<()> {
+    fn write<T: std::io::Write>(&self, writer: &mut Writer<T>) -> Result<()> {
         use Type::*;
         match self {
             Int | Char | Void | Unknown | None => {
@@ -37,7 +37,8 @@ impl Writable for Type {
             Struct(s) => write!(writer, "struct {}", s)?,
             Array(s, t) => {
                 let mut out = Vec::new();
-                t.write(&mut out)?;
+                let mut new_writer = Writer::new(&mut out);
+                t.write(&mut new_writer)?;
                 let inner_type = String::from_utf8(out)?;
                 let split_point = inner_type.find("[");
                 match split_point {
