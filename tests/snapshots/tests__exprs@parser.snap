@@ -22,7 +22,7 @@ Program([
         ], [
           Some(Literal(Int(5))),
           None,
-          Some(Literal(Int(2))),
+          Some(BinOp(Literal(Int(0)), Sub, Literal(Int(2)))),
         ])),
         While(
           expr: BinOp(VarExpr("a"), Lt, VarExpr("b")),
@@ -33,6 +33,7 @@ Program([
             ],
           ),
         ),
+        Decl(VarDecl(Int, "f", Some(Literal(Int(20))))),
       ],
     ),
   ))),

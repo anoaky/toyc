@@ -5,10 +5,11 @@ OUT
 */
 void main() {
   int a = 0, b = 10;
-  int c = 5, d, e = 2;
+  int c = 5, d, e = -2;
   while (a < b) {
     c = 2 * c;
     b = b - 1;
   }
+  int f = +20;
   // print_i(c);
 }

@@ -39,13 +39,21 @@ impl CompilerPass for Parser {
     ()      []      .                   (17, 18)
 */
 
-fn infix_precedence(category: Category) -> (u8, u8) {
+fn infix_bp(category: Category) -> (u8, u8) {
     use Category::*;
     match category {
         Assign => (2, 1),
         Lt | Le | Gt | Ge => (9, 10),
         Plus | Minus => (11, 12),
         Asterisk | Div | Rem => (13, 14),
+        _ => panic!("No precedence for category {:?}", category),
+    }
+}
+
+fn prefix_bp(category: Category) -> u8 {
+    use Category::*;
+    match category {
+        Plus | Minus => 15,
         _ => panic!("No precedence for category {:?}", category),
     }
 }
@@ -215,10 +223,25 @@ impl Parser {
         Ok(block)
     }
 
-    fn parse_expr(&mut self, min_precedence: u8) -> Result<ExprKind> {
-        let mut lhs = self.parse_atom()?;
+    fn parse_expr(&mut self, min_bind: u8) -> Result<ExprKind> {
+        use Category::*;
+        let mut lhs = if self.accept_any(vec![Plus, Minus]) {
+            let token = self.expect_any(vec![Plus, Minus])?;
+            let rbind = prefix_bp(token.category());
+            let rhs = self.parse_expr(rbind)?;
+            match token.category() {
+                Plus => rhs,
+                Minus => ExprKind::BinOp(
+                    Box::new(ExprKind::Literal(Literal::Int(0))),
+                    OpKind::Sub,
+                    Box::new(rhs),
+                ),
+                _ => unreachable!(),
+            }
+        } else {
+            self.parse_atom()?
+        };
         loop {
-            use Category::*;
             if !self.accept_any(vec![
                 Plus, Minus, Assign, Asterisk, Div, Rem, Lt, Le, Gt, Ge,
             ]) {
@@ -226,12 +249,12 @@ impl Parser {
             }
             let op = self.token.category();
 
-            let (lprec, rprec) = infix_precedence(op);
-            if lprec < min_precedence {
+            let (lbind, rbind) = infix_bp(op);
+            if lbind < min_bind {
                 break;
             }
             self.next_token()?;
-            let rhs = self.parse_expr(rprec)?;
+            let rhs = self.parse_expr(rbind)?;
             lhs = if op == Assign {
                 ExprKind::Assign(Box::new(lhs), Box::new(rhs))
             } else {
