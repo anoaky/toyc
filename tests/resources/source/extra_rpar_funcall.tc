@@ -1,0 +1,12 @@
+/*
+245
+*/
+int foo(char a) {
+    print_i((char)a);
+}
+
+void main() {
+    int i;
+    i = read_i();
+    foo(i));
+}

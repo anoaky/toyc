@@ -1,0 +1,31 @@
+---
+source: tests/tests.rs
+expression: ast
+snapshot_kind: text
+---
+Program([
+  Stmt(Decl(StructTypeDecl(Struct("foo"), "foo", [
+    VarDecl(Char, "a", None),
+    VarDecl(Char, "b", None),
+    VarDecl(Char, "c", None),
+  ]))),
+  Stmt(Decl(VarDecl(Struct("foo"), "glob", None))),
+  Stmt(Decl(FunDefn(
+    decl: Stmt(Decl(FunDecl(Void, "main", []))),
+    block: Block(
+      stmts: [
+        Decl(VarDecl(Struct("foo"), "loc", None)),
+        ExprStmt(Assign(FieldAccessExpr(VarExpr("loc"), "a"), Literal(Char('a')))),
+        ExprStmt(Assign(FieldAccessExpr(VarExpr("loc"), "b"), Literal(Char('b')))),
+        ExprStmt(Assign(FieldAccessExpr(VarExpr("loc"), "c"), Literal(Char('c')))),
+        ExprStmt(Assign(VarExpr("glob"), VarExpr("loc"))),
+        ExprStmt(FunCallExpr(VarExpr("print_c"), [
+          FieldAccessExpr(VarExpr("loc"), "a"),
+        ])),
+        ExprStmt(FunCallExpr(VarExpr("print_c"), [
+          FieldAccessExpr(VarExpr("glob"), "a"),
+        ])),
+      ],
+    ),
+  ))),
+])

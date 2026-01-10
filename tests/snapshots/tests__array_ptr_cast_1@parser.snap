@@ -1,0 +1,22 @@
+---
+source: tests/tests.rs
+expression: ast
+snapshot_kind: text
+---
+Program([
+  Stmt(Decl(FunDefn(
+    decl: Stmt(Decl(FunDecl(Void, "main", []))),
+    block: Block(
+      stmts: [
+        Decl(VarDecl(Array(4, Int), "a", None)),
+        Decl(VarDecl(Pointer(Int), "b", None)),
+        ExprStmt(Assign(ArrayAccessExpr(VarExpr("a"), Literal(Int(0))), Literal(Int(55)))),
+        ExprStmt(Assign(ArrayAccessExpr(VarExpr("a"), Literal(Int(1))), Literal(Int(66)))),
+        ExprStmt(Assign(VarExpr("b"), TypecastExpr(Pointer(Int), VarExpr("a")))),
+        ExprStmt(FunCallExpr(VarExpr("print_i"), [
+          DerefExpr(VarExpr("b")),
+        ])),
+      ],
+    ),
+  ))),
+])
