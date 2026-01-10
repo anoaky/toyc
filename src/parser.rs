@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use anyhow::{bail, Ok, Result};
+use anyhow::{Ok, Result, bail};
 
 use crate::{
     ast::{Ast, DeclKind, ExprKind, Literal, OpKind, StmtKind, Type},
@@ -192,6 +192,10 @@ impl Parser {
                 let l = self.expect(IntLiteral)?;
                 ExprKind::Literal(Literal::Int(l.data.parse()?))
             }
+            CharLiteral => {
+                let l = self.expect(CharLiteral)?;
+                ExprKind::Literal(Literal::Char(l.data.parse()?))
+            }
             Identifier => {
                 let id = self.expect(Identifier)?;
                 ExprKind::VarExpr(id.data)
@@ -235,9 +239,16 @@ impl Parser {
         use Category::*;
         let mut lhs = if self.accept(LPar) {
             self.expect(LPar)?;
-            let lhs = self.parse_expr(0)?;
-            self.expect(RPar)?;
-            lhs
+            if self.accept_any(vec![Int, Char, Void, Struct]) {
+                let ty = self.parse_types()?;
+                self.expect(RPar)?;
+                let rhs = self.parse_expr(15)?;
+                ExprKind::TypecastExpr(ty, Box::new(rhs))
+            } else {
+                let lhs = self.parse_expr(0)?;
+                self.expect(RPar)?;
+                lhs
+            }
         } else if self.accept_any(vec![Plus, Minus]) {
             let token = self.expect_any(vec![Plus, Minus])?;
             let rbind = prefix_bp(token.category());

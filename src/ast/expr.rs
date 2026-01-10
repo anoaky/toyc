@@ -3,7 +3,7 @@ use std::io::Write;
 use serde::Serialize;
 
 use crate::{
-    ast::Literal,
+    ast::{Literal, Type},
     util::{Writable, Writer},
 };
 
@@ -15,6 +15,7 @@ pub enum ExprKind {
     BinOp(Box<ExprKind>, OpKind, Box<ExprKind>),
     Assign(Box<ExprKind>, Box<ExprKind>),
     FunCallExpr(Box<ExprKind>, Vec<ExprKind>),
+    TypecastExpr(Type, Box<ExprKind>),
 }
 
 #[derive(Serialize, Clone, Copy)]
@@ -87,6 +88,12 @@ impl Writable for ExprKind {
                     arg.write(writer)?;
                 }
                 write!(writer, ")")?;
+            }
+            Self::TypecastExpr(t, expr) => {
+                write!(writer, "(")?;
+                t.write(writer)?;
+                write!(writer, ")")?;
+                expr.write(writer)?;
             }
         };
         Ok(())

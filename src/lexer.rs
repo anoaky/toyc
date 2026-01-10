@@ -38,6 +38,20 @@ impl Tokeniser {
         Ok(Token::new(Category::Invalid, None, line, col))
     }
 
+    fn try_finish_char(&mut self, data: String) -> Result<Token> {
+        let c = self.reader.next()?;
+        if c == '\'' {
+            Ok(Token::new(
+                Category::CharLiteral,
+                Some(data),
+                self.reader.line,
+                self.reader.col,
+            ))
+        } else {
+            self.invalid(c, self.reader.line, self.reader.col)
+        }
+    }
+
     fn try_read_int(&mut self, data: String) -> Result<Token> {
         if !self.reader.peek().is_ascii_digit() {
             Ok(Token::new(
@@ -101,6 +115,20 @@ impl Tokeniser {
         })
     }
 
+    fn try_read_char(&mut self) -> Result<Token> {
+        let c = self.reader.next()?;
+        if c.is_ascii_alphanumeric() || is_special(c) || c == '"' || c == ' ' {
+            self.try_finish_char(format!("{}", c))
+        } else if c == '\\' {
+            match self.try_process_escape()? {
+                Some(c) => self.try_finish_char(format!("{}", c)),
+                None => self.invalid(c, self.reader.line, self.reader.col),
+            }
+        } else {
+            self.invalid(c, self.reader.line, self.reader.col)
+        }
+    }
+
     fn try_read_string(&mut self, mut data: String) -> Result<Token> {
         let c = self.reader.next()?;
         if c == '"' {
@@ -161,6 +189,7 @@ impl Tokeniser {
             let c = self.reader.next()?;
 
             let tok = match c {
+                '\'' => self.try_read_char()?,
                 '"' => self.try_read_string("".to_owned())?,
                 '{' => Token::blank(LBrace, line, col),
                 '}' => Token::blank(RBrace, line, col),
@@ -238,19 +267,22 @@ impl Tokeniser {
                     _ => Token::blank(Div, line, col),
                 },
                 _ if c.is_ascii_whitespace() => self.next_token()?,
-                _ if is_valid_ident_start(c) => self.try_read_keyword(c.to_string(), vec![
-                    "if".to_string(),
-                    "int".to_string(),
-                    "void".to_string(),
-                    "char".to_string(),
-                    "else".to_string(),
-                    "while".to_string(),
-                    "return".to_string(),
-                    "struct".to_string(),
-                    "sizeof".to_string(),
-                    "continue".to_string(),
-                    "break".to_string(),
-                ])?,
+                _ if is_valid_ident_start(c) => self.try_read_keyword(
+                    c.to_string(),
+                    vec![
+                        "if".to_string(),
+                        "int".to_string(),
+                        "void".to_string(),
+                        "char".to_string(),
+                        "else".to_string(),
+                        "while".to_string(),
+                        "return".to_string(),
+                        "struct".to_string(),
+                        "sizeof".to_string(),
+                        "continue".to_string(),
+                        "break".to_string(),
+                    ],
+                )?,
                 _ if c.is_ascii_digit() => self.try_read_int(c.to_string())?,
                 _ => self.invalid(c, line, col)?,
             };
