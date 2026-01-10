@@ -1,0 +1,9 @@
+// 240
+int foo;
+void foo() {
+    print_s((char*)"oh noes!!");
+}
+
+int main() {
+    return 0;
+}
