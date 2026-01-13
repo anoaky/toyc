@@ -1,9 +1,12 @@
-use std::{collections::HashMap, rc::Rc, sync::mpsc::RecvError};
+use std::{
+    collections::{HashMap, VecDeque},
+    rc::Rc,
+};
 
 use anyhow::{Result, bail};
 
 use crate::{
-    ast::{BoundDecl, BoundExpr, BoundStmt, DeclKind, ExprKind, StmtKind},
+    ast::{BoundDecl, BoundExpr, BoundStmt, DeclKind, ExprKind, StmtKind, Type},
     util::CompilerPass,
 };
 
@@ -31,12 +34,40 @@ impl Binder {
         }
     }
 
+    pub fn declare_stdlib(ast: Vec<DeclKind>) -> Vec<DeclKind> {
+        let mut deque_ast: VecDeque<DeclKind> = ast.into();
+        // print_i
+        deque_ast.push_front(DeclKind::FunDecl(
+            Type::Void,
+            "print_i".to_string(),
+            vec![DeclKind::VarDecl(Type::Int, "i".to_string(), None)],
+        ));
+        // print_c
+        deque_ast.push_front(DeclKind::FunDecl(
+            Type::Void,
+            "print_c".to_string(),
+            vec![DeclKind::VarDecl(Type::Char, "c".to_string(), None)],
+        ));
+        // print_s
+        deque_ast.push_front(DeclKind::FunDecl(
+            Type::Void,
+            "print_s".to_string(),
+            vec![DeclKind::VarDecl(
+                Type::Pointer(Box::new(Type::Char)),
+                "s".to_string(),
+                None,
+            )],
+        ));
+        deque_ast.into()
+    }
+
     pub fn bind(
         &mut self,
         ast: Vec<DeclKind>,
         scope: &mut Scope<Rc<BoundDecl>>,
     ) -> Result<Vec<Rc<BoundDecl>>> {
         let mut bound_decls = vec![];
+        let ast = Self::declare_stdlib(ast);
         for decl in ast {
             let mut bound_decl = self.bind_decl(decl, scope)?;
             bound_decls.append(&mut bound_decl);
@@ -126,6 +157,8 @@ impl Binder {
                         "Duplicate declaration of function {}",
                         name.clone()
                     ))?;
+                } else if scope.lookup(&name).is_some() {
+                    self.error(format!("Duplicate usage of identifier {}", name.clone()))?;
                 }
                 let bound_decl = Rc::new(BoundDecl::FunDecl {
                     ty,
@@ -252,7 +285,45 @@ impl Binder {
     }
 
     fn bind_stmt(&mut self, stmt: StmtKind, scope: &mut Scope<Rc<BoundDecl>>) -> Result<BoundStmt> {
-        todo!()
+        Ok(match stmt {
+            StmtKind::Block { stmts } => {
+                let mut bound_stmts = vec![];
+                for stmt in stmts {
+                    bound_stmts.push(self.bind_stmt(stmt, scope)?);
+                }
+                BoundStmt::Block(bound_stmts)
+            }
+            StmtKind::While { expr, stmt } => {
+                let bound_expr = self.bind_expr(*expr, scope)?;
+                let bound_stmt = self.bind_stmt(*stmt, scope)?;
+                BoundStmt::While(Box::new(bound_expr), Box::new(bound_stmt))
+            }
+            StmtKind::If { expr, then, els } => {
+                let bound_expr = self.bind_expr(*expr, scope)?;
+                let bound_then = self.bind_stmt(*then, scope)?;
+                let bound_els = match els {
+                    Some(els) => Some(Box::new(self.bind_stmt(*els, scope)?)),
+                    None => None,
+                };
+                BoundStmt::If(Box::new(bound_expr), Box::new(bound_then), bound_els)
+            }
+            StmtKind::Decl(decl) => {
+                let bound_decl = self.bind_decl(decl, scope)?.get(0).unwrap().clone();
+                BoundStmt::Decl(bound_decl)
+            }
+            StmtKind::Return(expr) => {
+                let bound_expr = match expr {
+                    Some(expr) => Some(Box::new(self.bind_expr(*expr, scope)?)),
+                    None => None,
+                };
+                BoundStmt::Return(bound_expr)
+            }
+            StmtKind::ExprStmt(expr) => {
+                BoundStmt::ExprStmt(Box::new(self.bind_expr(*expr, scope)?))
+            }
+            StmtKind::Break => BoundStmt::Break,
+            StmtKind::Continue => BoundStmt::Continue,
+        })
     }
 
     fn error(&mut self, err: String) -> Result<()> {
