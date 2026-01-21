@@ -3,15 +3,15 @@ source: tests/tests.rs
 expression: ast
 snapshot_kind: text
 ---
-Program([
-  Stmt(Decl(StructTypeDecl(Struct("foo"), "foo", [
+[
+  StructTypeDecl(Struct("foo"), "foo", [
     VarDecl(Int, "a", None),
     VarDecl(Int, "b", None),
-  ]))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Struct("foo"), "swap", [
+  ]),
+  FunDefn(
+    decl: FunDecl(Struct("foo"), "swap", [
       VarDecl(Struct("foo"), "inp", None),
-    ]))),
+    ]),
     block: Block(
       stmts: [
         Decl(VarDecl(Int, "tmp", None)),
@@ -21,9 +21,9 @@ Program([
         Return(Some(VarExpr("inp"))),
       ],
     ),
-  ))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "main", []))),
+  ),
+  FunDefn(
+    decl: FunDecl(Void, "main", []),
     block: Block(
       stmts: [
         Decl(VarDecl(Struct("foo"), "bar", None)),
@@ -37,5 +37,5 @@ Program([
         ])),
       ],
     ),
-  ))),
-])
+  ),
+]

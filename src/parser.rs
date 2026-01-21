@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, path::Path};
 
 use anyhow::{bail, Ok, Result};
 
@@ -70,6 +70,11 @@ fn postfix_bp(category: Category) -> Option<u8> {
 }
 
 impl Parser {
+    pub fn from_path(path: &Path) -> Result<Self> {
+        let tokeniser = Tokeniser::from_path(path)?;
+        Self::with_tokeniser(tokeniser)
+    }
+
     pub fn with_tokeniser(mut tokeniser: Tokeniser) -> Result<Self> {
         let first_token = tokeniser.next_token()?;
         Ok(Self {

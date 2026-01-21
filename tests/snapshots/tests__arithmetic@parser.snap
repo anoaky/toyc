@@ -3,14 +3,14 @@ source: tests/tests.rs
 expression: ast
 snapshot_kind: text
 ---
-Program([
-  Stmt(Decl(VarDecl(Int, "test_num", None))),
-  Stmt(Decl(VarDecl(Int, "correct", None))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "atest", [
+[
+  VarDecl(Int, "test_num", None),
+  VarDecl(Int, "correct", None),
+  FunDefn(
+    decl: FunDecl(Void, "atest", [
       VarDecl(Int, "exp", None),
       VarDecl(Int, "act", None),
-    ]))),
+    ]),
     block: Block(
       stmts: [
         If(
@@ -49,9 +49,9 @@ Program([
         ExprStmt(Assign(VarExpr("test_num"), BinOp(VarExpr("test_num"), Add, Literal(Int(1))))),
       ],
     ),
-  ))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "main", []))),
+  ),
+  FunDefn(
+    decl: FunDecl(Void, "main", []),
     block: Block(
       stmts: [
         Decl(VarDecl(Int, "x", None)),
@@ -121,5 +121,5 @@ Program([
         ),
       ],
     ),
-  ))),
-])
+  ),
+]

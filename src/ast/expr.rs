@@ -1,4 +1,4 @@
-use std::{io::Write, rc::Rc};
+use std::{fmt::Display, io::Write, rc::Rc};
 
 use serde::Serialize;
 
@@ -69,8 +69,8 @@ pub enum Operator {
     Or,
 }
 
-impl Writable for Operator {
-    fn write<T: std::io::Write>(&self, writer: &mut Writer<'_, T>, _: bool) -> anyhow::Result<()> {
+impl Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use Operator::*;
         let s = match self {
             Add => "+",
@@ -87,7 +87,13 @@ impl Writable for Operator {
             And => "&&",
             Or => "||",
         };
-        write!(writer, "{}", s)?;
+        write!(f, "{}", s)
+    }
+}
+
+impl Writable for Operator {
+    fn write<T: std::io::Write>(&self, writer: &mut Writer<'_, T>, _: bool) -> anyhow::Result<()> {
+        write!(writer, "{}", self)?;
         Ok(())
     }
 }

@@ -1,12 +1,16 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
 #[derive(Clone)]
-pub struct Scope<'a, T> {
-    map: HashMap<String, T>,
-    parent: Option<&'a Scope<'a, T>>,
+pub struct Scope<'a, K, V> {
+    map: HashMap<K, V>,
+    parent: Option<&'a Scope<'a, K, V>>,
 }
 
-impl<'a, T> Scope<'a, T> {
+impl<'a, K, V> Scope<'a, K, V>
+where
+    V: Eq,
+    K: Eq + Hash,
+{
     pub fn new() -> Self {
         Self {
             map: HashMap::from([]),
@@ -21,7 +25,7 @@ impl<'a, T> Scope<'a, T> {
         }
     }
 
-    pub fn lookup(&self, key: &String) -> Option<&T> {
+    pub fn lookup(&self, key: &K) -> Option<&V> {
         match self.map.get(key) {
             Some(t) => Some(t),
             None => match self.parent {
@@ -31,11 +35,11 @@ impl<'a, T> Scope<'a, T> {
         }
     }
 
-    pub fn lookup_local(&self, key: &String) -> Option<&T> {
+    pub fn lookup_local(&self, key: &K) -> Option<&V> {
         self.map.get(key)
     }
 
-    pub fn put(&mut self, key: String, value: T) -> Option<T> {
+    pub fn put(&mut self, key: K, value: V) -> Option<V> {
         self.map.insert(key, value)
     }
 }

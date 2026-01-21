@@ -4,16 +4,57 @@ mod typer;
 
 pub use scope::Scope;
 
-use std::rc::Rc;
+use std::{path::Path, rc::Rc};
 
+use anyhow::Result;
 pub use bind::Binder;
 use serde::Serialize;
 pub use typer::Typer;
 
 use crate::{
     ast::{Literal, Operator, Type},
-    util::{NodeId, NodeRef},
+    parser::Parser,
+    util::{CompilerPass, NodeId, NodeRef},
 };
+
+pub struct SemanticAnalysis {
+    num_errors: u32,
+    parser: Parser,
+}
+
+impl CompilerPass for SemanticAnalysis {
+    fn num_errors(&self) -> u32 {
+        self.num_errors
+    }
+    fn inc_error(&mut self) {
+        self.num_errors += 1;
+    }
+}
+
+impl SemanticAnalysis {
+    pub fn from_path(path: &Path) -> Result<Self> {
+        let parser = Parser::from_path(path)?;
+        Ok(Self {
+            num_errors: 0,
+            parser,
+        })
+    }
+
+    pub fn analyse(&mut self) -> Result<HirPool<TypedHir>> {
+        let mut binder = Binder::new();
+        let ast = self.parser.parse()?;
+        let untyped_hir = binder.bind(ast)?;
+        if binder.has_error() {
+            self.num_errors += binder.num_errors();
+        }
+        let mut typer = Typer::new(untyped_hir);
+        let typed_hir = typer.type_all()?;
+        if typer.has_error() {
+            self.num_errors += typer.num_errors();
+        }
+        Ok(typed_hir)
+    }
+}
 
 #[derive(Serialize, Clone)]
 pub enum HIRKind {
@@ -67,11 +108,38 @@ impl Default for UntypedHir {
 }
 
 #[derive(Serialize, Clone)]
-pub struct HirPool<T>(Vec<T>);
+pub struct TypedHir {
+    id: NodeId,
+    ty: Type,
+    kind: HIRKind,
+}
+
+impl TypedHir {
+    fn new(ty: Type, kind: HIRKind) -> Self {
+        Self {
+            ty,
+            kind,
+            ..Self::default()
+        }
+    }
+}
+
+impl Default for TypedHir {
+    fn default() -> Self {
+        Self {
+            id: NodeId::next(),
+            ty: Type::Unknown,
+            kind: HIRKind::Invalid,
+        }
+    }
+}
+
+#[derive(Serialize, Clone)]
+pub struct HirPool<T>(Vec<T>, Vec<NodeRef>);
 
 impl<T> HirPool<T> {
     pub fn new() -> Self {
-        Self(vec![])
+        Self(vec![], vec![])
     }
 
     pub fn add(&mut self, node: T) -> NodeRef {
@@ -82,6 +150,14 @@ impl<T> HirPool<T> {
 
     pub fn get(&self, node_ref: NodeRef) -> Option<&T> {
         self.0.get(node_ref.0)
+    }
+
+    pub fn get_tops(&self) -> Vec<NodeRef> {
+        self.1.clone()
+    }
+
+    pub fn set_top(&mut self, node_ref: NodeRef) {
+        self.1.push(node_ref);
     }
 }
 

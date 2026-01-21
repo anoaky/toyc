@@ -3,14 +3,14 @@ source: tests/tests.rs
 expression: ast
 snapshot_kind: text
 ---
-Program([
-  Stmt(Decl(StructTypeDecl(Struct("foo"), "foo", [
+[
+  StructTypeDecl(Struct("foo"), "foo", [
     VarDecl(Array(7, Char), "a", None),
-  ]))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "populate", [
+  ]),
+  FunDefn(
+    decl: FunDecl(Void, "populate", [
       VarDecl(Array(7, Char), "a", None),
-    ]))),
+    ]),
     block: Block(
       stmts: [
         ExprStmt(Assign(ArrayAccessExpr(VarExpr("a"), Literal(Int(0))), Literal(Char('a')))),
@@ -22,9 +22,9 @@ Program([
         ExprStmt(Assign(ArrayAccessExpr(VarExpr("a"), Literal(Int(6))), Literal(Char('0')))),
       ],
     ),
-  ))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "main", []))),
+  ),
+  FunDefn(
+    decl: FunDecl(Void, "main", []),
     block: Block(
       stmts: [
         Decl(VarDecl(Struct("foo"), "bar", None)),
@@ -36,5 +36,5 @@ Program([
         ])),
       ],
     ),
-  ))),
-])
+  ),
+]

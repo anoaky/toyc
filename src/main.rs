@@ -6,7 +6,7 @@ use std::{
 use anyhow::Result;
 use toyc::{
     ast::DeclKind,
-    hir::{Binder, Scope},
+    hir::{Binder, Scope, Typer},
     lexer::{Category, Tokeniser},
     parser::Parser,
     util::{CompilerPass, Writable, Writer},
@@ -42,8 +42,11 @@ pub fn main() -> Result<()> {
     } else if args[1] == "-sem" {
         let program = parse(tokeniser)?;
         let mut binder = Binder::new();
-        let bound_ast = binder.bind(program, &mut Scope::new())?;
+        let untyped_hir = binder.bind(program)?;
         println!("Name analysis successful");
+        let mut typer = Typer::new(untyped_hir);
+        typer.type_all()?;
+        println!("Type analysis successful");
     } else {
         usage();
     }

@@ -3,10 +3,10 @@ source: tests/tests.rs
 expression: ast
 snapshot_kind: text
 ---
-Program([
-  Stmt(Decl(VarDecl(Int, "foo", None))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "foo", []))),
+[
+  VarDecl(Int, "foo", None),
+  FunDefn(
+    decl: FunDecl(Void, "foo", []),
     block: Block(
       stmts: [
         ExprStmt(FunCallExpr(VarExpr("print_s"), [
@@ -14,13 +14,13 @@ Program([
         ])),
       ],
     ),
-  ))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Int, "main", []))),
+  ),
+  FunDefn(
+    decl: FunDecl(Int, "main", []),
     block: Block(
       stmts: [
         Return(Some(Literal(Int(0)))),
       ],
     ),
-  ))),
-])
+  ),
+]

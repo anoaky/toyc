@@ -3,11 +3,11 @@ source: tests/tests.rs
 expression: ast
 snapshot_kind: text
 ---
-Program([
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "test", [
+[
+  FunDefn(
+    decl: FunDecl(Void, "test", [
       VarDecl(Int, "s", None),
-    ]))),
+    ]),
     block: Block(
       stmts: [
         If(
@@ -21,32 +21,32 @@ Program([
         ),
       ],
     ),
-  ))),
-  Stmt(Decl(StructTypeDecl(Struct("pair"), "pair", [
+  ),
+  StructTypeDecl(Struct("pair"), "pair", [
     VarDecl(Int, "x", None),
     VarDecl(Int, "y", None),
-  ]))),
-  Stmt(Decl(StructTypeDecl(Struct("foo"), "foo", [
+  ]),
+  StructTypeDecl(Struct("foo"), "foo", [
     VarDecl(Char, "a", None),
     VarDecl(Int, "x", None),
     VarDecl(Char, "b", None),
     VarDecl(Array(3, Char), "c", None),
     VarDecl(Int, "y", None),
-  ]))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "skip", [
+  ]),
+  FunDefn(
+    decl: FunDecl(Void, "skip", [
       VarDecl(Array(3, Int), "a", None),
-    ]))),
+    ]),
     block: Block(
       stmts: [
         ExprStmt(Assign(ArrayAccessExpr(VarExpr("a"), Literal(Int(2))), BinOp(ArrayAccessExpr(VarExpr("a"), Literal(Int(1))), Mul, Literal(Int(2))))),
       ],
     ),
-  ))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "hop", [
+  ),
+  FunDefn(
+    decl: FunDecl(Void, "hop", [
       VarDecl(Array(3, Int), "a", None),
-    ]))),
+    ]),
     block: Block(
       stmts: [
         ExprStmt(Assign(ArrayAccessExpr(VarExpr("a"), Literal(Int(1))), BinOp(ArrayAccessExpr(VarExpr("a"), Literal(Int(0))), Mul, Literal(Int(2))))),
@@ -55,9 +55,9 @@ Program([
         ])),
       ],
     ),
-  ))),
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "main", []))),
+  ),
+  FunDefn(
+    decl: FunDecl(Void, "main", []),
     block: Block(
       stmts: [
         ExprStmt(FunCallExpr(VarExpr("print_s"), [
@@ -148,5 +148,5 @@ Program([
         ),
       ],
     ),
-  ))),
-])
+  ),
+]

@@ -9,6 +9,7 @@ use insta::assert_ron_snapshot;
 use rstest::rstest;
 use toyc::{
     ast::DeclKind,
+    hir::{HirPool, SemanticAnalysis, TypedHir},
     lexer::{Category, Tokeniser},
     parser::Parser,
     util::CompilerPass,
@@ -16,6 +17,7 @@ use toyc::{
 
 const LEXER_FAIL: u32 = 250;
 const PARSER_FAIL: u32 = 245;
+const SEM_FAIL: u32 = 240;
 const PASS: u32 = 0;
 
 type Ast = Vec<DeclKind>;
@@ -50,6 +52,15 @@ fn test_parser(path: &Path) -> Result<(u32, Ast)> {
     Ok((exit_code, program))
 }
 
+fn test_sem(path: &Path) -> Result<(u32, HirPool<TypedHir>)> {
+    let mut sem_analysis = SemanticAnalysis::from_path(path)?;
+    let typed_hir = sem_analysis.analyse();
+    match typed_hir {
+        Ok(typed_hir) => Ok((PASS, typed_hir)),
+        Err(_) => Ok((SEM_FAIL, HirPool::new())),
+    }
+}
+
 #[rstest]
 fn test(
     #[base_dir = "tests/resources/source/"]
@@ -69,24 +80,37 @@ fn test(
     } else {
         0
     };
-    let lexer_exit_code = if expected_exit_code == LEXER_FAIL {
+    let lexer_expected = if expected_exit_code == LEXER_FAIL {
         LEXER_FAIL
     } else {
         PASS
     };
-    let parser_exit_code = if expected_exit_code == PARSER_FAIL {
+    let parser_expected = if expected_exit_code == PARSER_FAIL {
         PARSER_FAIL
     } else {
         PASS
     };
+    let sem_expected = if expected_exit_code == SEM_FAIL {
+        SEM_FAIL
+    } else {
+        PASS
+    };
 
-    assert_eq!(lexer_exit_code, test_lexer(path.as_path()));
+    assert_eq!(lexer_expected, test_lexer(path.as_path()));
     if expected_exit_code < LEXER_FAIL {
-        let (parser_exit, ast) = test_parser(path.as_path())?;
-        assert_eq!(parser_exit_code, parser_exit);
-        if parser_exit_code == PASS {
+        let (parser_actual, ast) = test_parser(path.as_path())?;
+        assert_eq!(parser_expected, parser_actual);
+        if parser_expected == PASS {
             set_snapshot_suffix!("parser");
             assert_ron_snapshot!(path.file_stem().unwrap().to_str().unwrap(), ast);
+        }
+    }
+    if expected_exit_code < PARSER_FAIL {
+        let (sem_actual, typed_hir) = test_sem(path.as_path())?;
+        assert_eq!(sem_expected, sem_actual);
+        if sem_expected == PASS {
+            set_snapshot_suffix!("sem");
+            assert_ron_snapshot!(path.file_stem().unwrap().to_str().unwrap(), typed_hir);
         }
     }
     Ok(())

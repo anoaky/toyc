@@ -1,0 +1,216 @@
+---
+source: tests/tests.rs
+expression: typed_hir
+snapshot_kind: text
+---
+HirPool([
+  TypedHir(
+    id: NodeId(438),
+    ty: Pointer(Char),
+    kind: VarDecl(Pointer(Char), "s", None),
+  ),
+  TypedHir(
+    id: NodeId(440),
+    ty: Void,
+    kind: FunDecl(Void, "print_s", [
+      NodeRef(0),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(442),
+    ty: Char,
+    kind: VarDecl(Char, "c", None),
+  ),
+  TypedHir(
+    id: NodeId(444),
+    ty: Void,
+    kind: FunDecl(Void, "print_c", [
+      NodeRef(2),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(447),
+    ty: Int,
+    kind: VarDecl(Int, "i", None),
+  ),
+  TypedHir(
+    id: NodeId(448),
+    ty: Void,
+    kind: FunDecl(Void, "print_i", [
+      NodeRef(4),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(449),
+    ty: Char,
+    kind: VarDecl(Char, "a", None),
+  ),
+  TypedHir(
+    id: NodeId(450),
+    ty: Char,
+    kind: VarDecl(Char, "b", None),
+  ),
+  TypedHir(
+    id: NodeId(452),
+    ty: Char,
+    kind: VarDecl(Char, "c", None),
+  ),
+  TypedHir(
+    id: NodeId(454),
+    ty: Struct("foo"),
+    kind: StructTypeDecl(Struct("foo"), "foo", [
+      NodeRef(6),
+      NodeRef(7),
+      NodeRef(8),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(456),
+    ty: Struct("foo"),
+    kind: VarDecl(Struct("foo"), "glob", None),
+  ),
+  TypedHir(
+    id: NodeId(457),
+    ty: Void,
+    kind: FunDecl(Void, "main", []),
+  ),
+  TypedHir(
+    id: NodeId(459),
+    ty: Struct("foo"),
+    kind: VarDecl(Struct("foo"), "loc", None),
+  ),
+  TypedHir(
+    id: NodeId(462),
+    ty: Struct("foo"),
+    kind: VarExpr(NodeRef(12)),
+  ),
+  TypedHir(
+    id: NodeId(463),
+    ty: Char,
+    kind: FieldAccessExpr(NodeRef(13), "a"),
+  ),
+  TypedHir(
+    id: NodeId(476),
+    ty: Char,
+    kind: Literal(Char('a')),
+  ),
+  TypedHir(
+    id: NodeId(478),
+    ty: Char,
+    kind: Assign(NodeRef(14), NodeRef(15)),
+  ),
+  TypedHir(
+    id: NodeId(480),
+    ty: Struct("foo"),
+    kind: VarExpr(NodeRef(12)),
+  ),
+  TypedHir(
+    id: NodeId(482),
+    ty: Char,
+    kind: FieldAccessExpr(NodeRef(17), "b"),
+  ),
+  TypedHir(
+    id: NodeId(483),
+    ty: Char,
+    kind: Literal(Char('b')),
+  ),
+  TypedHir(
+    id: NodeId(484),
+    ty: Char,
+    kind: Assign(NodeRef(18), NodeRef(19)),
+  ),
+  TypedHir(
+    id: NodeId(485),
+    ty: Struct("foo"),
+    kind: VarExpr(NodeRef(12)),
+  ),
+  TypedHir(
+    id: NodeId(486),
+    ty: Char,
+    kind: FieldAccessExpr(NodeRef(21), "c"),
+  ),
+  TypedHir(
+    id: NodeId(487),
+    ty: Char,
+    kind: Literal(Char('c')),
+  ),
+  TypedHir(
+    id: NodeId(488),
+    ty: Char,
+    kind: Assign(NodeRef(22), NodeRef(23)),
+  ),
+  TypedHir(
+    id: NodeId(489),
+    ty: Struct("foo"),
+    kind: VarExpr(NodeRef(10)),
+  ),
+  TypedHir(
+    id: NodeId(490),
+    ty: Struct("foo"),
+    kind: VarExpr(NodeRef(12)),
+  ),
+  TypedHir(
+    id: NodeId(491),
+    ty: Struct("foo"),
+    kind: Assign(NodeRef(25), NodeRef(26)),
+  ),
+  TypedHir(
+    id: NodeId(492),
+    ty: Struct("foo"),
+    kind: VarExpr(NodeRef(12)),
+  ),
+  TypedHir(
+    id: NodeId(505),
+    ty: Char,
+    kind: FieldAccessExpr(NodeRef(28), "a"),
+  ),
+  TypedHir(
+    id: NodeId(507),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(3), [
+      NodeRef(29),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(511),
+    ty: Struct("foo"),
+    kind: VarExpr(NodeRef(10)),
+  ),
+  TypedHir(
+    id: NodeId(514),
+    ty: Char,
+    kind: FieldAccessExpr(NodeRef(31), "a"),
+  ),
+  TypedHir(
+    id: NodeId(517),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(3), [
+      NodeRef(32),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(519),
+    ty: r#None,
+    kind: Block([
+      NodeRef(12),
+      NodeRef(16),
+      NodeRef(20),
+      NodeRef(24),
+      NodeRef(27),
+      NodeRef(30),
+      NodeRef(33),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(521),
+    ty: Void,
+    kind: FunDefn(NodeRef(11), NodeRef(34)),
+  ),
+], [
+  NodeRef(1),
+  NodeRef(3),
+  NodeRef(5),
+  NodeRef(9),
+  NodeRef(10),
+  NodeRef(35),
+])

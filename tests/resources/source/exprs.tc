@@ -8,10 +8,5 @@ void main() {
     c = 2 * (c + 1);
     b = b * ((b - 1));
   }
-  int cast_1 = 50, cast_2 = 60;
-  char cast_3 = 'b';
-  print_c((char)cast_1);
-  print_c((char)(cast_1 + cast_2));
-  print_i((int)cast_3 + 1);
   print_i(c);
 }

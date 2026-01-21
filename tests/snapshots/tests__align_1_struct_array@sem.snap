@@ -1,0 +1,330 @@
+---
+source: tests/tests.rs
+expression: typed_hir
+snapshot_kind: text
+---
+HirPool([
+  TypedHir(
+    id: NodeId(178),
+    ty: Pointer(Char),
+    kind: VarDecl(Pointer(Char), "s", None),
+  ),
+  TypedHir(
+    id: NodeId(179),
+    ty: Void,
+    kind: FunDecl(Void, "print_s", [
+      NodeRef(0),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(180),
+    ty: Char,
+    kind: VarDecl(Char, "c", None),
+  ),
+  TypedHir(
+    id: NodeId(181),
+    ty: Void,
+    kind: FunDecl(Void, "print_c", [
+      NodeRef(2),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(182),
+    ty: Int,
+    kind: VarDecl(Int, "i", None),
+  ),
+  TypedHir(
+    id: NodeId(183),
+    ty: Void,
+    kind: FunDecl(Void, "print_i", [
+      NodeRef(4),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(184),
+    ty: Array(7, Char),
+    kind: VarDecl(Array(7, Char), "a", None),
+  ),
+  TypedHir(
+    id: NodeId(185),
+    ty: Struct("foo"),
+    kind: StructTypeDecl(Struct("foo"), "foo", [
+      NodeRef(6),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(186),
+    ty: Array(7, Char),
+    kind: VarDecl(Array(7, Char), "a", None),
+  ),
+  TypedHir(
+    id: NodeId(187),
+    ty: Void,
+    kind: FunDecl(Void, "populate", [
+      NodeRef(8),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(188),
+    ty: Array(7, Char),
+    kind: VarExpr(NodeRef(8)),
+  ),
+  TypedHir(
+    id: NodeId(189),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(190),
+    ty: Char,
+    kind: ArrayAccessExpr(NodeRef(10), NodeRef(11)),
+  ),
+  TypedHir(
+    id: NodeId(191),
+    ty: Char,
+    kind: Literal(Char('a')),
+  ),
+  TypedHir(
+    id: NodeId(192),
+    ty: Char,
+    kind: Assign(NodeRef(12), NodeRef(13)),
+  ),
+  TypedHir(
+    id: NodeId(193),
+    ty: Array(7, Char),
+    kind: VarExpr(NodeRef(8)),
+  ),
+  TypedHir(
+    id: NodeId(194),
+    ty: Int,
+    kind: Literal(Int(1)),
+  ),
+  TypedHir(
+    id: NodeId(195),
+    ty: Char,
+    kind: ArrayAccessExpr(NodeRef(15), NodeRef(16)),
+  ),
+  TypedHir(
+    id: NodeId(196),
+    ty: Char,
+    kind: Literal(Char('b')),
+  ),
+  TypedHir(
+    id: NodeId(197),
+    ty: Char,
+    kind: Assign(NodeRef(17), NodeRef(18)),
+  ),
+  TypedHir(
+    id: NodeId(198),
+    ty: Array(7, Char),
+    kind: VarExpr(NodeRef(8)),
+  ),
+  TypedHir(
+    id: NodeId(199),
+    ty: Int,
+    kind: Literal(Int(2)),
+  ),
+  TypedHir(
+    id: NodeId(200),
+    ty: Char,
+    kind: ArrayAccessExpr(NodeRef(20), NodeRef(21)),
+  ),
+  TypedHir(
+    id: NodeId(201),
+    ty: Char,
+    kind: Literal(Char('c')),
+  ),
+  TypedHir(
+    id: NodeId(202),
+    ty: Char,
+    kind: Assign(NodeRef(22), NodeRef(23)),
+  ),
+  TypedHir(
+    id: NodeId(203),
+    ty: Array(7, Char),
+    kind: VarExpr(NodeRef(8)),
+  ),
+  TypedHir(
+    id: NodeId(204),
+    ty: Int,
+    kind: Literal(Int(3)),
+  ),
+  TypedHir(
+    id: NodeId(208),
+    ty: Char,
+    kind: ArrayAccessExpr(NodeRef(25), NodeRef(26)),
+  ),
+  TypedHir(
+    id: NodeId(209),
+    ty: Char,
+    kind: Literal(Char('d')),
+  ),
+  TypedHir(
+    id: NodeId(217),
+    ty: Char,
+    kind: Assign(NodeRef(27), NodeRef(28)),
+  ),
+  TypedHir(
+    id: NodeId(220),
+    ty: Array(7, Char),
+    kind: VarExpr(NodeRef(8)),
+  ),
+  TypedHir(
+    id: NodeId(221),
+    ty: Int,
+    kind: Literal(Int(4)),
+  ),
+  TypedHir(
+    id: NodeId(223),
+    ty: Char,
+    kind: ArrayAccessExpr(NodeRef(30), NodeRef(31)),
+  ),
+  TypedHir(
+    id: NodeId(224),
+    ty: Char,
+    kind: Literal(Char('e')),
+  ),
+  TypedHir(
+    id: NodeId(225),
+    ty: Char,
+    kind: Assign(NodeRef(32), NodeRef(33)),
+  ),
+  TypedHir(
+    id: NodeId(226),
+    ty: Array(7, Char),
+    kind: VarExpr(NodeRef(8)),
+  ),
+  TypedHir(
+    id: NodeId(228),
+    ty: Int,
+    kind: Literal(Int(5)),
+  ),
+  TypedHir(
+    id: NodeId(229),
+    ty: Char,
+    kind: ArrayAccessExpr(NodeRef(35), NodeRef(36)),
+  ),
+  TypedHir(
+    id: NodeId(230),
+    ty: Char,
+    kind: Literal(Char('f')),
+  ),
+  TypedHir(
+    id: NodeId(231),
+    ty: Char,
+    kind: Assign(NodeRef(37), NodeRef(38)),
+  ),
+  TypedHir(
+    id: NodeId(233),
+    ty: Array(7, Char),
+    kind: VarExpr(NodeRef(8)),
+  ),
+  TypedHir(
+    id: NodeId(236),
+    ty: Int,
+    kind: Literal(Int(6)),
+  ),
+  TypedHir(
+    id: NodeId(238),
+    ty: Char,
+    kind: ArrayAccessExpr(NodeRef(40), NodeRef(41)),
+  ),
+  TypedHir(
+    id: NodeId(239),
+    ty: Char,
+    kind: Literal(Char('0')),
+  ),
+  TypedHir(
+    id: NodeId(241),
+    ty: Char,
+    kind: Assign(NodeRef(42), NodeRef(43)),
+  ),
+  TypedHir(
+    id: NodeId(244),
+    ty: r#None,
+    kind: Block([
+      NodeRef(14),
+      NodeRef(19),
+      NodeRef(24),
+      NodeRef(29),
+      NodeRef(34),
+      NodeRef(39),
+      NodeRef(44),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(246),
+    ty: Void,
+    kind: FunDefn(NodeRef(9), NodeRef(45)),
+  ),
+  TypedHir(
+    id: NodeId(249),
+    ty: Void,
+    kind: FunDecl(Void, "main", []),
+  ),
+  TypedHir(
+    id: NodeId(252),
+    ty: Struct("foo"),
+    kind: VarDecl(Struct("foo"), "bar", None),
+  ),
+  TypedHir(
+    id: NodeId(254),
+    ty: Struct("foo"),
+    kind: VarExpr(NodeRef(48)),
+  ),
+  TypedHir(
+    id: NodeId(258),
+    ty: Array(7, Char),
+    kind: FieldAccessExpr(NodeRef(49), "a"),
+  ),
+  TypedHir(
+    id: NodeId(262),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(9), [
+      NodeRef(50),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(272),
+    ty: Struct("foo"),
+    kind: VarExpr(NodeRef(48)),
+  ),
+  TypedHir(
+    id: NodeId(281),
+    ty: Array(7, Char),
+    kind: FieldAccessExpr(NodeRef(52), "a"),
+  ),
+  TypedHir(
+    id: NodeId(283),
+    ty: Pointer(Char),
+    kind: TypecastExpr(Pointer(Char), NodeRef(53)),
+  ),
+  TypedHir(
+    id: NodeId(285),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(1), [
+      NodeRef(54),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(286),
+    ty: r#None,
+    kind: Block([
+      NodeRef(48),
+      NodeRef(51),
+      NodeRef(55),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(404),
+    ty: Void,
+    kind: FunDefn(NodeRef(47), NodeRef(56)),
+  ),
+], [
+  NodeRef(1),
+  NodeRef(3),
+  NodeRef(5),
+  NodeRef(7),
+  NodeRef(46),
+  NodeRef(57),
+])

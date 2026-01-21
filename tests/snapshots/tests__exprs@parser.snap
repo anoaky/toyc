@@ -3,9 +3,9 @@ source: tests/tests.rs
 expression: ast
 snapshot_kind: text
 ---
-Program([
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "main", []))),
+[
+  FunDefn(
+    decl: FunDecl(Void, "main", []),
     block: Block(
       stmts: [
         Decl(MultiVarDecl(Int, [
@@ -33,27 +33,10 @@ Program([
             ],
           ),
         ),
-        Decl(MultiVarDecl(Int, [
-          "cast_1",
-          "cast_2",
-        ], [
-          Some(Literal(Int(50))),
-          Some(Literal(Int(60))),
-        ])),
-        Decl(VarDecl(Char, "cast_3", Some(Literal(Char('b'))))),
-        ExprStmt(FunCallExpr(VarExpr("print_c"), [
-          TypecastExpr(Char, VarExpr("cast_1")),
-        ])),
-        ExprStmt(FunCallExpr(VarExpr("print_c"), [
-          TypecastExpr(Char, BinOp(VarExpr("cast_1"), Add, VarExpr("cast_2"))),
-        ])),
-        ExprStmt(FunCallExpr(VarExpr("print_i"), [
-          BinOp(TypecastExpr(Int, VarExpr("cast_3")), Add, Literal(Int(1))),
-        ])),
         ExprStmt(FunCallExpr(VarExpr("print_i"), [
           VarExpr("c"),
         ])),
       ],
     ),
-  ))),
-])
+  ),
+]

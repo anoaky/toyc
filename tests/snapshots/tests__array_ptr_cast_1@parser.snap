@@ -3,9 +3,9 @@ source: tests/tests.rs
 expression: ast
 snapshot_kind: text
 ---
-Program([
-  Stmt(Decl(FunDefn(
-    decl: Stmt(Decl(FunDecl(Void, "main", []))),
+[
+  FunDefn(
+    decl: FunDecl(Void, "main", []),
     block: Block(
       stmts: [
         Decl(VarDecl(Array(4, Int), "a", None)),
@@ -18,5 +18,5 @@ Program([
         ])),
       ],
     ),
-  ))),
-])
+  ),
+]

@@ -1,0 +1,1007 @@
+---
+source: tests/tests.rs
+expression: typed_hir
+snapshot_kind: text
+---
+HirPool([
+  TypedHir(
+    id: NodeId(430),
+    ty: Pointer(Char),
+    kind: VarDecl(Pointer(Char), "s", None),
+  ),
+  TypedHir(
+    id: NodeId(435),
+    ty: Void,
+    kind: FunDecl(Void, "print_s", [
+      NodeRef(0),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(437),
+    ty: Char,
+    kind: VarDecl(Char, "c", None),
+  ),
+  TypedHir(
+    id: NodeId(439),
+    ty: Void,
+    kind: FunDecl(Void, "print_c", [
+      NodeRef(2),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(441),
+    ty: Int,
+    kind: VarDecl(Int, "i", None),
+  ),
+  TypedHir(
+    id: NodeId(443),
+    ty: Void,
+    kind: FunDecl(Void, "print_i", [
+      NodeRef(4),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(445),
+    ty: Int,
+    kind: VarDecl(Int, "test_num", None),
+  ),
+  TypedHir(
+    id: NodeId(446),
+    ty: Int,
+    kind: VarDecl(Int, "correct", None),
+  ),
+  TypedHir(
+    id: NodeId(451),
+    ty: Int,
+    kind: VarDecl(Int, "exp", None),
+  ),
+  TypedHir(
+    id: NodeId(453),
+    ty: Int,
+    kind: VarDecl(Int, "act", None),
+  ),
+  TypedHir(
+    id: NodeId(455),
+    ty: Void,
+    kind: FunDecl(Void, "atest", [
+      NodeRef(8),
+      NodeRef(9),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(458),
+    ty: Int,
+    kind: VarExpr(NodeRef(8)),
+  ),
+  TypedHir(
+    id: NodeId(460),
+    ty: Int,
+    kind: VarExpr(NodeRef(9)),
+  ),
+  TypedHir(
+    id: NodeId(461),
+    ty: Int,
+    kind: BinOp(NodeRef(11), Eq, NodeRef(12)),
+  ),
+  TypedHir(
+    id: NodeId(464),
+    ty: Int,
+    kind: VarExpr(NodeRef(7)),
+  ),
+  TypedHir(
+    id: NodeId(465),
+    ty: Int,
+    kind: VarExpr(NodeRef(7)),
+  ),
+  TypedHir(
+    id: NodeId(466),
+    ty: Int,
+    kind: Literal(Int(1)),
+  ),
+  TypedHir(
+    id: NodeId(467),
+    ty: Int,
+    kind: BinOp(NodeRef(15), Add, NodeRef(16)),
+  ),
+  TypedHir(
+    id: NodeId(468),
+    ty: Int,
+    kind: Assign(NodeRef(14), NodeRef(17)),
+  ),
+  TypedHir(
+    id: NodeId(469),
+    ty: r#None,
+    kind: Block([
+      NodeRef(18),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(470),
+    ty: r#None,
+    kind: Block([
+      NodeRef(19),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(471),
+    ty: Pointer(Char),
+    kind: Literal(Str("TEST ")),
+  ),
+  TypedHir(
+    id: NodeId(472),
+    ty: Pointer(Char),
+    kind: TypecastExpr(Pointer(Char), NodeRef(21)),
+  ),
+  TypedHir(
+    id: NodeId(473),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(1), [
+      NodeRef(22),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(474),
+    ty: Int,
+    kind: VarExpr(NodeRef(6)),
+  ),
+  TypedHir(
+    id: NodeId(475),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(5), [
+      NodeRef(24),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(477),
+    ty: Pointer(Char),
+    kind: Literal(Str(" FAIL ")),
+  ),
+  TypedHir(
+    id: NodeId(479),
+    ty: Pointer(Char),
+    kind: TypecastExpr(Pointer(Char), NodeRef(26)),
+  ),
+  TypedHir(
+    id: NodeId(481),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(1), [
+      NodeRef(27),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(493),
+    ty: Int,
+    kind: VarExpr(NodeRef(8)),
+  ),
+  TypedHir(
+    id: NodeId(494),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(5), [
+      NodeRef(29),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(495),
+    ty: Pointer(Char),
+    kind: Literal(Str(" != ")),
+  ),
+  TypedHir(
+    id: NodeId(496),
+    ty: Pointer(Char),
+    kind: TypecastExpr(Pointer(Char), NodeRef(31)),
+  ),
+  TypedHir(
+    id: NodeId(497),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(1), [
+      NodeRef(32),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(498),
+    ty: Int,
+    kind: VarExpr(NodeRef(9)),
+  ),
+  TypedHir(
+    id: NodeId(499),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(5), [
+      NodeRef(34),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(500),
+    ty: Char,
+    kind: Literal(Char('n')),
+  ),
+  TypedHir(
+    id: NodeId(501),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(3), [
+      NodeRef(36),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(502),
+    ty: r#None,
+    kind: Block([
+      NodeRef(23),
+      NodeRef(25),
+      NodeRef(28),
+      NodeRef(30),
+      NodeRef(33),
+      NodeRef(35),
+      NodeRef(37),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(503),
+    ty: r#None,
+    kind: Block([
+      NodeRef(38),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(504),
+    ty: r#None,
+    kind: If(NodeRef(13), NodeRef(20), Some(NodeRef(39))),
+  ),
+  TypedHir(
+    id: NodeId(506),
+    ty: Int,
+    kind: VarExpr(NodeRef(6)),
+  ),
+  TypedHir(
+    id: NodeId(507),
+    ty: Int,
+    kind: VarExpr(NodeRef(6)),
+  ),
+  TypedHir(
+    id: NodeId(508),
+    ty: Int,
+    kind: Literal(Int(1)),
+  ),
+  TypedHir(
+    id: NodeId(509),
+    ty: Int,
+    kind: BinOp(NodeRef(42), Add, NodeRef(43)),
+  ),
+  TypedHir(
+    id: NodeId(510),
+    ty: Int,
+    kind: Assign(NodeRef(41), NodeRef(44)),
+  ),
+  TypedHir(
+    id: NodeId(512),
+    ty: r#None,
+    kind: Block([
+      NodeRef(40),
+      NodeRef(45),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(513),
+    ty: Void,
+    kind: FunDefn(NodeRef(10), NodeRef(46)),
+  ),
+  TypedHir(
+    id: NodeId(515),
+    ty: Void,
+    kind: FunDecl(Void, "main", []),
+  ),
+  TypedHir(
+    id: NodeId(516),
+    ty: Int,
+    kind: VarDecl(Int, "x", None),
+  ),
+  TypedHir(
+    id: NodeId(518),
+    ty: Int,
+    kind: VarDecl(Int, "y", None),
+  ),
+  TypedHir(
+    id: NodeId(520),
+    ty: Int,
+    kind: VarDecl(Int, "z", None),
+  ),
+  TypedHir(
+    id: NodeId(522),
+    ty: Int,
+    kind: VarExpr(NodeRef(6)),
+  ),
+  TypedHir(
+    id: NodeId(523),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(524),
+    ty: Int,
+    kind: Assign(NodeRef(52), NodeRef(53)),
+  ),
+  TypedHir(
+    id: NodeId(525),
+    ty: Int,
+    kind: Literal(Int(1)),
+  ),
+  TypedHir(
+    id: NodeId(526),
+    ty: Int,
+    kind: Literal(Int(1)),
+  ),
+  TypedHir(
+    id: NodeId(527),
+    ty: Int,
+    kind: BinOp(NodeRef(55), Add, NodeRef(56)),
+  ),
+  TypedHir(
+    id: NodeId(528),
+    ty: Int,
+    kind: Literal(Int(2)),
+  ),
+  TypedHir(
+    id: NodeId(529),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(57),
+      NodeRef(58),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(530),
+    ty: Int,
+    kind: Literal(Int(34)),
+  ),
+  TypedHir(
+    id: NodeId(531),
+    ty: Int,
+    kind: Literal(Int(4)),
+  ),
+  TypedHir(
+    id: NodeId(532),
+    ty: Int,
+    kind: BinOp(NodeRef(60), Mul, NodeRef(61)),
+  ),
+  TypedHir(
+    id: NodeId(533),
+    ty: Int,
+    kind: Literal(Int(136)),
+  ),
+  TypedHir(
+    id: NodeId(534),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(62),
+      NodeRef(63),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(535),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(536),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(537),
+    ty: Int,
+    kind: Literal(Int(500)),
+  ),
+  TypedHir(
+    id: NodeId(538),
+    ty: Int,
+    kind: BinOp(NodeRef(66), Sub, NodeRef(67)),
+  ),
+  TypedHir(
+    id: NodeId(539),
+    ty: Int,
+    kind: BinOp(NodeRef(65), Sub, NodeRef(68)),
+  ),
+  TypedHir(
+    id: NodeId(540),
+    ty: Int,
+    kind: Literal(Int(500)),
+  ),
+  TypedHir(
+    id: NodeId(541),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(69),
+      NodeRef(70),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(542),
+    ty: Int,
+    kind: Literal(Int(667)),
+  ),
+  TypedHir(
+    id: NodeId(543),
+    ty: Int,
+    kind: Literal(Int(4)),
+  ),
+  TypedHir(
+    id: NodeId(544),
+    ty: Int,
+    kind: Literal(Int(4)),
+  ),
+  TypedHir(
+    id: NodeId(545),
+    ty: Int,
+    kind: BinOp(NodeRef(73), Mul, NodeRef(74)),
+  ),
+  TypedHir(
+    id: NodeId(546),
+    ty: Int,
+    kind: Literal(Int(33)),
+  ),
+  TypedHir(
+    id: NodeId(547),
+    ty: Int,
+    kind: BinOp(NodeRef(75), Mul, NodeRef(76)),
+  ),
+  TypedHir(
+    id: NodeId(548),
+    ty: Int,
+    kind: Literal(Int(6)),
+  ),
+  TypedHir(
+    id: NodeId(549),
+    ty: Int,
+    kind: BinOp(NodeRef(77), Div, NodeRef(78)),
+  ),
+  TypedHir(
+    id: NodeId(550),
+    ty: Int,
+    kind: Literal(Int(7)),
+  ),
+  TypedHir(
+    id: NodeId(551),
+    ty: Int,
+    kind: BinOp(NodeRef(79), Mod, NodeRef(80)),
+  ),
+  TypedHir(
+    id: NodeId(552),
+    ty: Int,
+    kind: BinOp(NodeRef(72), Add, NodeRef(81)),
+  ),
+  TypedHir(
+    id: NodeId(553),
+    ty: Int,
+    kind: Literal(Int(671)),
+  ),
+  TypedHir(
+    id: NodeId(554),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(82),
+      NodeRef(83),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(555),
+    ty: Int,
+    kind: VarExpr(NodeRef(49)),
+  ),
+  TypedHir(
+    id: NodeId(556),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(557),
+    ty: Int,
+    kind: Literal(Int(34)),
+  ),
+  TypedHir(
+    id: NodeId(558),
+    ty: Int,
+    kind: BinOp(NodeRef(86), Sub, NodeRef(87)),
+  ),
+  TypedHir(
+    id: NodeId(559),
+    ty: Int,
+    kind: Assign(NodeRef(85), NodeRef(88)),
+  ),
+  TypedHir(
+    id: NodeId(560),
+    ty: Int,
+    kind: VarExpr(NodeRef(50)),
+  ),
+  TypedHir(
+    id: NodeId(561),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(562),
+    ty: Int,
+    kind: Literal(Int(4)),
+  ),
+  TypedHir(
+    id: NodeId(563),
+    ty: Int,
+    kind: BinOp(NodeRef(91), Sub, NodeRef(92)),
+  ),
+  TypedHir(
+    id: NodeId(564),
+    ty: Int,
+    kind: Assign(NodeRef(90), NodeRef(93)),
+  ),
+  TypedHir(
+    id: NodeId(565),
+    ty: Int,
+    kind: VarExpr(NodeRef(49)),
+  ),
+  TypedHir(
+    id: NodeId(566),
+    ty: Int,
+    kind: VarExpr(NodeRef(50)),
+  ),
+  TypedHir(
+    id: NodeId(567),
+    ty: Int,
+    kind: BinOp(NodeRef(95), Mul, NodeRef(96)),
+  ),
+  TypedHir(
+    id: NodeId(568),
+    ty: Int,
+    kind: Literal(Int(136)),
+  ),
+  TypedHir(
+    id: NodeId(569),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(97),
+      NodeRef(98),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(570),
+    ty: Int,
+    kind: VarExpr(NodeRef(49)),
+  ),
+  TypedHir(
+    id: NodeId(571),
+    ty: Int,
+    kind: Literal(Int(5)),
+  ),
+  TypedHir(
+    id: NodeId(572),
+    ty: Int,
+    kind: BinOp(NodeRef(100), Mul, NodeRef(101)),
+  ),
+  TypedHir(
+    id: NodeId(573),
+    ty: Int,
+    kind: VarExpr(NodeRef(50)),
+  ),
+  TypedHir(
+    id: NodeId(574),
+    ty: Int,
+    kind: Literal(Int(5)),
+  ),
+  TypedHir(
+    id: NodeId(575),
+    ty: Int,
+    kind: BinOp(NodeRef(103), Mul, NodeRef(104)),
+  ),
+  TypedHir(
+    id: NodeId(576),
+    ty: Int,
+    kind: BinOp(NodeRef(102), Add, NodeRef(105)),
+  ),
+  TypedHir(
+    id: NodeId(577),
+    ty: Int,
+    kind: Literal(Int(44)),
+  ),
+  TypedHir(
+    id: NodeId(578),
+    ty: Int,
+    kind: BinOp(NodeRef(106), Sub, NodeRef(107)),
+  ),
+  TypedHir(
+    id: NodeId(579),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(580),
+    ty: Int,
+    kind: Literal(Int(234)),
+  ),
+  TypedHir(
+    id: NodeId(581),
+    ty: Int,
+    kind: BinOp(NodeRef(109), Sub, NodeRef(110)),
+  ),
+  TypedHir(
+    id: NodeId(582),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(108),
+      NodeRef(111),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(583),
+    ty: Int,
+    kind: Literal(Int(13)),
+  ),
+  TypedHir(
+    id: NodeId(584),
+    ty: Int,
+    kind: Literal(Int(3)),
+  ),
+  TypedHir(
+    id: NodeId(585),
+    ty: Int,
+    kind: BinOp(NodeRef(113), Div, NodeRef(114)),
+  ),
+  TypedHir(
+    id: NodeId(586),
+    ty: Int,
+    kind: Literal(Int(4)),
+  ),
+  TypedHir(
+    id: NodeId(587),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(115),
+      NodeRef(116),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(588),
+    ty: Int,
+    kind: Literal(Int(77)),
+  ),
+  TypedHir(
+    id: NodeId(589),
+    ty: Int,
+    kind: Literal(Int(44)),
+  ),
+  TypedHir(
+    id: NodeId(590),
+    ty: Int,
+    kind: BinOp(NodeRef(118), Mod, NodeRef(119)),
+  ),
+  TypedHir(
+    id: NodeId(591),
+    ty: Int,
+    kind: Literal(Int(33)),
+  ),
+  TypedHir(
+    id: NodeId(592),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(120),
+      NodeRef(121),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(593),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(594),
+    ty: Int,
+    kind: Literal(Int(13)),
+  ),
+  TypedHir(
+    id: NodeId(595),
+    ty: Int,
+    kind: BinOp(NodeRef(123), Sub, NodeRef(124)),
+  ),
+  TypedHir(
+    id: NodeId(596),
+    ty: Int,
+    kind: Literal(Int(3)),
+  ),
+  TypedHir(
+    id: NodeId(597),
+    ty: Int,
+    kind: BinOp(NodeRef(125), Div, NodeRef(126)),
+  ),
+  TypedHir(
+    id: NodeId(598),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(599),
+    ty: Int,
+    kind: Literal(Int(4)),
+  ),
+  TypedHir(
+    id: NodeId(600),
+    ty: Int,
+    kind: BinOp(NodeRef(128), Sub, NodeRef(129)),
+  ),
+  TypedHir(
+    id: NodeId(601),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(127),
+      NodeRef(130),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(602),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(603),
+    ty: Int,
+    kind: Literal(Int(13)),
+  ),
+  TypedHir(
+    id: NodeId(604),
+    ty: Int,
+    kind: BinOp(NodeRef(132), Sub, NodeRef(133)),
+  ),
+  TypedHir(
+    id: NodeId(605),
+    ty: Int,
+    kind: Literal(Int(3)),
+  ),
+  TypedHir(
+    id: NodeId(606),
+    ty: Int,
+    kind: BinOp(NodeRef(134), Div, NodeRef(135)),
+  ),
+  TypedHir(
+    id: NodeId(607),
+    ty: Int,
+    kind: Literal(Int(3)),
+  ),
+  TypedHir(
+    id: NodeId(608),
+    ty: Int,
+    kind: BinOp(NodeRef(136), Mul, NodeRef(137)),
+  ),
+  TypedHir(
+    id: NodeId(609),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(610),
+    ty: Int,
+    kind: Literal(Int(13)),
+  ),
+  TypedHir(
+    id: NodeId(611),
+    ty: Int,
+    kind: BinOp(NodeRef(139), Sub, NodeRef(140)),
+  ),
+  TypedHir(
+    id: NodeId(612),
+    ty: Int,
+    kind: Literal(Int(3)),
+  ),
+  TypedHir(
+    id: NodeId(613),
+    ty: Int,
+    kind: BinOp(NodeRef(141), Mod, NodeRef(142)),
+  ),
+  TypedHir(
+    id: NodeId(614),
+    ty: Int,
+    kind: BinOp(NodeRef(138), Add, NodeRef(143)),
+  ),
+  TypedHir(
+    id: NodeId(615),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(616),
+    ty: Int,
+    kind: Literal(Int(13)),
+  ),
+  TypedHir(
+    id: NodeId(617),
+    ty: Int,
+    kind: BinOp(NodeRef(145), Sub, NodeRef(146)),
+  ),
+  TypedHir(
+    id: NodeId(618),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(144),
+      NodeRef(147),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(619),
+    ty: Int,
+    kind: Literal(Int(55)),
+  ),
+  TypedHir(
+    id: NodeId(620),
+    ty: Int,
+    kind: Literal(Int(34)),
+  ),
+  TypedHir(
+    id: NodeId(621),
+    ty: Int,
+    kind: BinOp(NodeRef(149), Mul, NodeRef(150)),
+  ),
+  TypedHir(
+    id: NodeId(622),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(623),
+    ty: Int,
+    kind: VarExpr(NodeRef(49)),
+  ),
+  TypedHir(
+    id: NodeId(624),
+    ty: Int,
+    kind: BinOp(NodeRef(152), Sub, NodeRef(153)),
+  ),
+  TypedHir(
+    id: NodeId(625),
+    ty: Int,
+    kind: Literal(Int(4)),
+  ),
+  TypedHir(
+    id: NodeId(626),
+    ty: Int,
+    kind: BinOp(NodeRef(154), Mod, NodeRef(155)),
+  ),
+  TypedHir(
+    id: NodeId(627),
+    ty: Int,
+    kind: BinOp(NodeRef(151), Add, NodeRef(156)),
+  ),
+  TypedHir(
+    id: NodeId(628),
+    ty: Int,
+    kind: Literal(Int(1872)),
+  ),
+  TypedHir(
+    id: NodeId(629),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(157),
+      NodeRef(158),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(630),
+    ty: Int,
+    kind: Literal(Int(1537983633)),
+  ),
+  TypedHir(
+    id: NodeId(631),
+    ty: Int,
+    kind: Literal(Int(2)),
+  ),
+  TypedHir(
+    id: NodeId(632),
+    ty: Int,
+    kind: BinOp(NodeRef(160), Mul, NodeRef(161)),
+  ),
+  TypedHir(
+    id: NodeId(633),
+    ty: Int,
+    kind: Literal(Int(0)),
+  ),
+  TypedHir(
+    id: NodeId(634),
+    ty: Int,
+    kind: Literal(Int(1219000030)),
+  ),
+  TypedHir(
+    id: NodeId(635),
+    ty: Int,
+    kind: BinOp(NodeRef(163), Sub, NodeRef(164)),
+  ),
+  TypedHir(
+    id: NodeId(636),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(10), [
+      NodeRef(162),
+      NodeRef(165),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(637),
+    ty: Int,
+    kind: VarExpr(NodeRef(7)),
+  ),
+  TypedHir(
+    id: NodeId(638),
+    ty: Int,
+    kind: VarExpr(NodeRef(6)),
+  ),
+  TypedHir(
+    id: NodeId(639),
+    ty: Int,
+    kind: BinOp(NodeRef(167), Eq, NodeRef(168)),
+  ),
+  TypedHir(
+    id: NodeId(640),
+    ty: Pointer(Char),
+    kind: Literal(Str("ALL PASS")),
+  ),
+  TypedHir(
+    id: NodeId(641),
+    ty: Pointer(Char),
+    kind: TypecastExpr(Pointer(Char), NodeRef(170)),
+  ),
+  TypedHir(
+    id: NodeId(642),
+    ty: Void,
+    kind: FunCallExpr(NodeRef(1), [
+      NodeRef(171),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(643),
+    ty: r#None,
+    kind: Block([
+      NodeRef(172),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(644),
+    ty: r#None,
+    kind: Block([
+      NodeRef(173),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(645),
+    ty: r#None,
+    kind: If(NodeRef(169), NodeRef(174), None),
+  ),
+  TypedHir(
+    id: NodeId(646),
+    ty: r#None,
+    kind: Block([
+      NodeRef(49),
+      NodeRef(50),
+      NodeRef(51),
+      NodeRef(54),
+      NodeRef(59),
+      NodeRef(64),
+      NodeRef(71),
+      NodeRef(84),
+      NodeRef(89),
+      NodeRef(94),
+      NodeRef(99),
+      NodeRef(112),
+      NodeRef(117),
+      NodeRef(122),
+      NodeRef(131),
+      NodeRef(148),
+      NodeRef(159),
+      NodeRef(166),
+      NodeRef(175),
+    ]),
+  ),
+  TypedHir(
+    id: NodeId(647),
+    ty: Void,
+    kind: FunDefn(NodeRef(48), NodeRef(176)),
+  ),
+], [
+  NodeRef(1),
+  NodeRef(3),
+  NodeRef(5),
+  NodeRef(6),
+  NodeRef(7),
+  NodeRef(47),
+  NodeRef(177),
+])

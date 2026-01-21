@@ -3,9 +3,9 @@ source: tests/tests.rs
 expression: ast
 snapshot_kind: text
 ---
-Program([
-  Stmt(Decl(StructTypeDecl(Struct("bad"), "bad", [
+[
+  StructTypeDecl(Struct("bad"), "bad", [
     VarDecl(Int, "field", None),
     VarDecl(Int, "field", None),
-  ]))),
-])
+  ]),
+]

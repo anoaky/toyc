@@ -55,12 +55,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "downcast-rs"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "117240f60069e65410b3ae1bb213295bd828f707b5bec6596a1afc8793ce0cbc"
-
-[[package]]
 name = "encode_unicode"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -502,7 +496,6 @@ name = "toyc"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "downcast-rs",
  "erased-serde",
  "insta",
  "ron",

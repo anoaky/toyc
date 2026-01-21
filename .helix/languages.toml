@@ -2,3 +2,13 @@
 name = "rust"
 formatter = {command = "rustfmt", args = ["+nightly"]}
 
+[language.debugger]
+name = "lldb-dap"
+transport = "stdio"
+command = "lldb-dap"
+
+[[language.debugger.templates]]
+name = "semantic analysis"
+request = "launch"
+completion = [ { name = "binary", completion = "filename" }, { name = "source", completion = "filename" } ]
+args = { console = "internalConsole", program = "{0}", args = [ "-sem", "{1}" ] }

@@ -61,15 +61,15 @@ impl Binder {
         deque_ast.into()
     }
 
-    pub fn bind(
-        &mut self,
-        ast: Vec<DeclKind>,
-        scope: &mut Scope<NodeRef>,
-    ) -> Result<HirPool<UntypedHir>> {
+    pub fn bind(&mut self, ast: Vec<DeclKind>) -> Result<HirPool<UntypedHir>> {
         let mut pool = HirPool::new();
+        let mut scope = Scope::new();
         let ast = Self::declare_stdlib(ast);
         for decl in ast {
-            self.bind_decl(decl, scope, &mut pool)?;
+            let bound_decls = self.bind_decl(decl, &mut scope, &mut pool)?;
+            for bd in bound_decls {
+                pool.set_top(bd);
+            }
         }
         Ok(pool)
     }
@@ -77,7 +77,7 @@ impl Binder {
     fn bind_decl(
         &mut self,
         decl: DeclKind,
-        scope: &mut Scope<NodeRef>,
+        scope: &mut Scope<String, NodeRef>,
         pool: &mut HirPool<UntypedHir>,
     ) -> Result<Vec<NodeRef>> {
         Ok(match decl {
@@ -184,7 +184,6 @@ impl Binder {
                 decl: unbound_fun_decl,
                 block,
             } => {
-                let mut fun_scope = Scope::with_parent(&scope);
                 let fun_name = match *unbound_fun_decl.clone() {
                     DeclKind::FunDecl(_, name, _) => name,
                     _ => {
@@ -196,13 +195,14 @@ impl Binder {
                 let fun_decl = match self.unbound_functions.get(&fun_name) {
                     Some(fd) => *fd,
                     None => *self
-                        .bind_decl(*unbound_fun_decl.clone(), &mut scope.clone(), pool)?
+                        .bind_decl(*unbound_fun_decl.clone(), scope, pool)?
                         .get(0)
                         .unwrap(),
                 };
                 // self.match_decl_defn(fun_decl.clone(), *unbound_fun_decl.clone())?;
                 let fun_decl_kind = pool.get(fun_decl).unwrap().kind.clone();
                 self.match_decl_defn(fun_decl_kind.clone(), *unbound_fun_decl.clone())?;
+                let mut fun_scope = Scope::with_parent(&scope);
                 match fun_decl_kind {
                     HIRKind::FunDecl(_, name, params) => {
                         self.unbound_functions.remove(&name);
@@ -219,7 +219,7 @@ impl Binder {
                     _ => self.error(format!("Function declaration is not a declaration"))?,
                 };
                 let stmt_ref = self.bind_stmt(*block, &mut fun_scope, pool)?;
-                let decl_kind = HIRKind::FunDefn(fun_decl, stmt_ref);
+                let decl_kind = HIRKind::FunDefn(fun_decl, *stmt_ref.get(0).unwrap());
                 let hir_decl = UntypedHir {
                     id: NodeId::next(),
                     kind: decl_kind,
@@ -233,7 +233,7 @@ impl Binder {
     fn bind_expr(
         &mut self,
         expr: ExprKind,
-        scope: &mut Scope<NodeRef>,
+        scope: &mut Scope<String, NodeRef>,
         pool: &mut HirPool<UntypedHir>,
     ) -> Result<NodeRef> {
         Ok(match expr {
@@ -293,12 +293,21 @@ impl Binder {
             }
             ExprKind::FunCallExpr(fun_expr, args) => match *fun_expr {
                 ExprKind::VarExpr(n) => {
-                    if let Some(decl) = scope.clone().lookup(&n) {
+                    let lookup_ref = scope.lookup(&n).copied();
+                    if let Some(decl) = lookup_ref {
+                        let fun_decl_kind = pool.get(decl).unwrap().kind.clone();
+                        match fun_decl_kind {
+                            HIRKind::FunDecl(_, _, _) => (),
+                            _ => self.error(format!(
+                                "Identifier {} not bound to a function in this scope",
+                                n
+                            ))?,
+                        };
                         let mut bound_args: Vec<NodeRef> = vec![];
                         for arg in args {
                             bound_args.push(self.bind_expr(arg, scope, pool)?);
                         }
-                        let expr_kind = HIRKind::FunCallExpr(*decl, bound_args);
+                        let expr_kind = HIRKind::FunCallExpr(decl, bound_args);
                         let hir_expr = UntypedHir {
                             kind: expr_kind,
                             ..Default::default()
@@ -365,37 +374,47 @@ impl Binder {
     fn bind_stmt(
         &mut self,
         stmt: StmtKind,
-        scope: &mut Scope<NodeRef>,
+        scope: &mut Scope<String, NodeRef>,
         pool: &mut HirPool<UntypedHir>,
-    ) -> Result<NodeRef> {
+    ) -> Result<Vec<NodeRef>> {
         Ok(match stmt {
             StmtKind::Block { stmts } => {
                 let mut bound_stmts = vec![];
+                let mut block_scope = Scope::with_parent(&scope);
                 for stmt in stmts {
-                    bound_stmts.push(self.bind_stmt(stmt, scope, pool)?);
+                    bound_stmts.append(&mut self.bind_stmt(stmt, &mut block_scope, pool)?);
                 }
                 let stmt_kind = HIRKind::Block(bound_stmts);
                 let hir_stmt = UntypedHir {
                     kind: stmt_kind,
                     ..Default::default()
                 };
-                pool.add(hir_stmt)
+                vec![pool.add(hir_stmt)]
             }
             StmtKind::While { expr, stmt } => {
                 let bound_expr = self.bind_expr(*expr, scope, pool)?;
-                let bound_stmt = self.bind_stmt(*stmt, scope, pool)?;
-                let stmt_kind = HIRKind::While(bound_expr, bound_stmt);
+                // wrap while stmt in a block
+                let block_stmt = StmtKind::Block { stmts: vec![*stmt] };
+                // now we can safely assume bound_stmt has length 1
+                let bound_stmt = self.bind_stmt(block_stmt, scope, pool)?;
+                let stmt_kind = HIRKind::While(bound_expr, *bound_stmt.get(0).unwrap());
                 let hir_stmt = UntypedHir {
                     kind: stmt_kind,
                     ..Default::default()
                 };
-                pool.add(hir_stmt)
+                vec![pool.add(hir_stmt)]
             }
             StmtKind::If { expr, then, els } => {
                 let bound_expr = self.bind_expr(*expr, scope, pool)?;
-                let bound_then = self.bind_stmt(*then, scope, pool)?;
+                let block_then = StmtKind::Block { stmts: vec![*then] };
+                let bound_then = *self.bind_stmt(block_then, scope, pool)?.get(0).unwrap();
                 let bound_els = match els {
-                    Some(els) => Some(self.bind_stmt(*els, scope, pool)?),
+                    Some(els) => Some(
+                        *self
+                            .bind_stmt(StmtKind::Block { stmts: vec![*els] }, scope, pool)?
+                            .get(0)
+                            .unwrap(),
+                    ),
                     None => None,
                 };
                 let stmt_kind = HIRKind::If(bound_expr, bound_then, bound_els);
@@ -403,20 +422,20 @@ impl Binder {
                     kind: stmt_kind,
                     ..Default::default()
                 };
-                pool.add(hir_stmt)
+                vec![pool.add(hir_stmt)]
             }
-            StmtKind::Decl(decl) => *self.bind_decl(decl, scope, pool)?.get(0).unwrap(),
+            StmtKind::Decl(decl) => self.bind_decl(decl, scope, pool)?,
             StmtKind::Return(expr) => {
                 let bound_expr = match expr {
                     Some(expr) => Some(self.bind_expr(*expr, scope, pool)?),
                     None => None,
                 };
                 let stmt_kind = HIRKind::Return(bound_expr);
-                pool.add(UntypedHir::new(stmt_kind))
+                vec![pool.add(UntypedHir::new(stmt_kind))]
             }
-            StmtKind::ExprStmt(expr) => self.bind_expr(*expr, scope, pool)?,
-            StmtKind::Break => pool.add(UntypedHir::new(HIRKind::Break)),
-            StmtKind::Continue => pool.add(UntypedHir::new(HIRKind::Continue)),
+            StmtKind::ExprStmt(expr) => vec![self.bind_expr(*expr, scope, pool)?],
+            StmtKind::Break => vec![pool.add(UntypedHir::new(HIRKind::Break))],
+            StmtKind::Continue => vec![pool.add(UntypedHir::new(HIRKind::Continue))],
         })
     }
 
