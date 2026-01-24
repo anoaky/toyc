@@ -78,6 +78,39 @@ where
             infix(left(5), just(Token::LogAnd), |lhs, _, rhs, _| {
                 ExprKind::BinOp(Box::new(lhs), Operator::And, Box::new(rhs)).into()
             }),
+            infix(
+                left(7),
+                just(Token::Eq).or(just(Token::Ne)),
+                |lhs, op_token: Token<'_>, rhs, _| {
+                    ExprKind::BinOp(Box::new(lhs), op_token.into(), Box::new(rhs)).into()
+                },
+            ),
+            infix(
+                left(9),
+                choice((
+                    just(Token::Lt),
+                    just(Token::Gt),
+                    just(Token::Le),
+                    just(Token::Ge),
+                )),
+                |lhs, op: Token<'_>, rhs, _| {
+                    ExprKind::BinOp(Box::new(lhs), op.into(), Box::new(rhs)).into()
+                },
+            ),
+            infix(
+                left(11),
+                choice((just(Token::Plus), just(Token::Minus))),
+                |lhs, op: Token<'_>, rhs, _| {
+                    ExprKind::BinOp(Box::new(lhs), op.into(), Box::new(rhs)).into()
+                },
+            ),
+            infix(
+                left(13),
+                choice((just(Token::Asterisk), just(Token::Div), just(Token::Rem))),
+                |lhs, op: Token<'_>, rhs, _| {
+                    ExprKind::BinOp(Box::new(lhs), op.into(), Box::new(rhs)).into()
+                },
+            ),
         ));
         choice((
             expr.delimited_by(just(Token::LPar), just(Token::RPar)),

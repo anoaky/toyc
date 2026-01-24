@@ -5,6 +5,7 @@ use serde::Serialize;
 
 use crate::{
     ast::types::{Ident, Ty},
+    lexer::Token,
     util::NodeId,
 };
 
@@ -196,5 +197,25 @@ impl Display for Value {
 impl Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.value)
+    }
+}
+
+impl<'a> From<Token<'a>> for Operator {
+    fn from(value: Token) -> Self {
+        match value {
+            Token::LogOr => Self::Or,
+            Token::LogAnd => Self::And,
+            Token::Eq => Self::Eq,
+            Token::Ne => Self::Ne,
+            Token::Lt => Self::Lt,
+            Token::Gt => Self::Gt,
+            Token::Le => Self::Le,
+            Token::Plus => Self::Add,
+            Token::Minus => Self::Minus,
+            Token::Asterisk => Self::Times,
+            Token::Div => Self::Div,
+            Token::Rem => Self::Mod,
+            _ => panic!("Attempt to convert invalid token {value} to Operator"),
+        }
     }
 }
