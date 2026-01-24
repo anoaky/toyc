@@ -115,6 +115,31 @@ where
                     ExprKind::BinOp(Box::new(lhs), op.into(), Box::new(rhs)).into()
                 },
             ),
+            prefix(
+                15,
+                choice((just(Token::Plus), just(Token::Minus))),
+                |op: Token<'_>, rhs, _| {
+                    ExprKind::BinOp(
+                        Box::new(ExprKind::Literal(0.into()).into()),
+                        op.into(),
+                        Box::new(rhs),
+                    )
+                    .into()
+                },
+            ),
+            prefix(15, just(Token::And), |_, rhs, _| {
+                ExprKind::Ref(Box::new(rhs)).into()
+            }),
+            prefix(15, just(Token::Asterisk), |_, rhs, _| {
+                ExprKind::Deref(Box::new(rhs)).into()
+            }),
+            prefix(
+                15,
+                parse_type_strict()
+                    .boxed()
+                    .delimited_by(just(Token::LPar), just(Token::RPar)),
+                |cast_to: Ty, rhs, _| ExprKind::Typecast(cast_to, Box::new(rhs)).into(),
+            ),
         ))
     })
 }
@@ -431,6 +456,8 @@ mod tests {
     #[case::plus_minus("3 + 4 - 6 + 7 + 8", "((((3 + 4) - 6) + 7) + 8)")]
     #[case::arithmetic("3 + 4 * 7 - 6 + 3 * 4", "(((3 + (4 * 7)) - 6) + (3 * 4))")]
     #[case::plus_parens("3 + (4 + 6) + 7", "((3 + (4 + 6)) + 7)")]
+    #[case::deref("x * y + *z", "((x * y) + (*z))")]
+    #[case::cast_char_to_int("x = (int)'c'", "(x = ((int) 'c'))")]
     fn test_expr(#[case] input: String, #[case] expected: String, cache: FileCache) {
         let src_file = src(input, cache);
         let inputs = super::get_inputs(&src_file);

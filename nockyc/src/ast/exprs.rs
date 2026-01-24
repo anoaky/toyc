@@ -157,7 +157,12 @@ impl Display for ExprKind {
             Self::Ident(id) => write!(f, "{id}"),
             Self::Assign(lhs, rhs) => write!(f, "({lhs} = {rhs})"),
             Self::BinOp(lhs, op, rhs) => write!(f, "({lhs} {op} {rhs})"),
-            _ => todo!(),
+            Self::CallFn(call) => todo!(),
+            Self::Typecast(cast_to, expr) => write!(f, "(({cast_to}) {expr})"),
+            Self::Ref(expr) => write!(f, "(&{expr})"),
+            Self::Deref(expr) => write!(f, "(*{expr})"),
+            Self::Index(arr, ind) => write!(f, "({arr}[{ind}])"),
+            Self::FieldAccess(str, field) => write!(f, "({str}.{field})"),
         }
     }
 }
