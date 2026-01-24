@@ -97,7 +97,10 @@ pub enum Operator {
 
 #[derive(Clone, Serialize)]
 pub struct CallFn {
-    pub name: Ident,
+    /// This must always have kind [`ExprKind::Ident`].
+    /// Implemented as an Expr to allow for easy Pratt parsing of function calls
+    /// as a postfix operator.
+    pub name: Box<Expr>,
     pub args: Vec<Expr>,
 }
 
@@ -157,7 +160,7 @@ impl Display for ExprKind {
             Self::Ident(id) => write!(f, "{id}"),
             Self::Assign(lhs, rhs) => write!(f, "({lhs} = {rhs})"),
             Self::BinOp(lhs, op, rhs) => write!(f, "({lhs} {op} {rhs})"),
-            Self::CallFn(call) => todo!(),
+            Self::CallFn(call) => write!(f, "({call})"),
             Self::Typecast(cast_to, expr) => write!(f, "(({cast_to}) {expr})"),
             Self::Ref(expr) => write!(f, "(&{expr})"),
             Self::Deref(expr) => write!(f, "(*{expr})"),
@@ -221,6 +224,30 @@ impl<'a> From<Token<'a>> for Operator {
             Token::Div => Self::Div,
             Token::Rem => Self::Mod,
             _ => panic!("Attempt to convert invalid token {value} to Operator"),
+        }
+    }
+}
+
+impl Display for CallFn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}({})",
+            self.name,
+            self.args
+                .iter()
+                .map(Expr::to_string)
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+
+impl From<(Expr, Vec<Expr>)> for CallFn {
+    fn from((name, args): (Expr, Vec<Expr>)) -> Self {
+        Self {
+            name: Box::new(name),
+            args,
         }
     }
 }

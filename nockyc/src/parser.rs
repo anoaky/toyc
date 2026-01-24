@@ -70,7 +70,8 @@ where
         ));
         let atom = choice((
             atom,
-            expr.delimited_by(just(Token::LPar), just(Token::RPar)),
+            expr.clone()
+                .delimited_by(just(Token::LPar), just(Token::RPar)),
         ));
         atom.pratt((
             infix(right(1), just(Token::Assign), |lhs, _, rhs, _| {
@@ -139,6 +140,25 @@ where
                     .boxed()
                     .delimited_by(just(Token::LPar), just(Token::RPar)),
                 |cast_to: Ty, rhs, _| ExprKind::Typecast(cast_to, Box::new(rhs)).into(),
+            ),
+            postfix(
+                17,
+                expr.clone()
+                    .delimited_by(just(Token::LBrack), just(Token::RBrack)),
+                |arr, ind, _| ExprKind::Index(Box::new(arr), Box::new(ind)).into(),
+            ),
+            postfix(
+                17,
+                just(Token::Dot).ignore_then(ident().boxed()),
+                |str, field, _| ExprKind::FieldAccess(Box::new(str), field).into(),
+            ),
+            postfix(
+                17,
+                expr.clone()
+                    .separated_by(just(Token::Comma))
+                    .collect::<Vec<_>>()
+                    .delimited_by(just(Token::LPar), just(Token::RPar)),
+                |fn_name, args, _| ExprKind::CallFn((fn_name, args).into()).into(),
             ),
         ))
     })
@@ -458,6 +478,7 @@ mod tests {
     #[case::plus_parens("3 + (4 + 6) + 7", "((3 + (4 + 6)) + 7)")]
     #[case::deref("x * y + *z", "((x * y) + (*z))")]
     #[case::cast_char_to_int("x = (int)'c'", "(x = ((int) 'c'))")]
+    #[case::simple_fn_call("x(1, 2, 3)", "(x(1, 2, 3))")]
     fn test_expr(#[case] input: String, #[case] expected: String, cache: FileCache) {
         let src_file = src(input, cache);
         let inputs = super::get_inputs(&src_file);
