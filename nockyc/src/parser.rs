@@ -68,7 +68,11 @@ where
             literal().boxed().map(|l| l.into()),
             ident().boxed().map(|id| id.into()),
         ));
-        let expr_pratt = atom.clone().pratt((
+        let atom = choice((
+            atom,
+            expr.delimited_by(just(Token::LPar), just(Token::RPar)),
+        ));
+        atom.pratt((
             infix(right(1), just(Token::Assign), |lhs, _, rhs, _| {
                 ExprKind::Assign(Box::new(lhs), Box::new(rhs)).into()
             }),
@@ -111,11 +115,6 @@ where
                     ExprKind::BinOp(Box::new(lhs), op.into(), Box::new(rhs)).into()
                 },
             ),
-        ));
-        choice((
-            expr.delimited_by(just(Token::LPar), just(Token::RPar)),
-            expr_pratt,
-            atom,
         ))
     })
 }
@@ -429,6 +428,9 @@ mod tests {
     #[case::double_assign("foo = bar = 42", "(foo = (bar = 42))")]
     #[case::log_or("foo = 42 || 24", "(foo = (42 || 24))")]
     #[case::log_ops("foo = 42 || 24 && 24 || 42", "(foo = ((42 || (24 && 24)) || 42))")]
+    #[case::plus_minus("3 + 4 - 6 + 7 + 8", "((((3 + 4) - 6) + 7) + 8)")]
+    #[case::arithmetic("3 + 4 * 7 - 6 + 3 * 4", "(((3 + (4 * 7)) - 6) + (3 * 4))")]
+    #[case::plus_parens("3 + (4 + 6) + 7", "((3 + (4 + 6)) + 7)")]
     fn test_expr(#[case] input: String, #[case] expected: String, cache: FileCache) {
         let src_file = src(input, cache);
         let inputs = super::get_inputs(&src_file);
