@@ -1,9 +1,0 @@
-/*
-240
-*/
-
-int notfunc;
-
-void main() {
-	notfunc(3);
-}

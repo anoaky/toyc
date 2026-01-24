@@ -1,95 +1,134 @@
-use std::{fmt::Display, io::Write};
+//! Constructs for encoding types.
+use std::fmt::Display;
 
-use anyhow::Result;
+use internment::Intern;
 use serde::Serialize;
 
-use crate::util::{Writable, Writer};
+use crate::util::NodeId;
 
-#[derive(Serialize, Clone, Debug)]
-pub enum Type {
-    Int,
-    Char,
-    Void,
-    Unknown,
-    None,
-    Pointer(Box<Type>),
-    Array(usize, Box<Type>),
-    Struct(String),
+/// Encodes an identifier.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
+pub struct Ident {
+    pub name: Intern<String>,
 }
 
-impl PartialEq for Type {
+/// Encodes the two primitive types: `int` and `char`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
+pub enum Primitive {
+    Int,
+    Char,
+}
+
+/// Encodes information for [`Ty`].
+///
+/// Since all [`TyKind`] are interned, two different [`Items`](super::Item) with equivalent type
+/// will have the exact same [`TyKind`].
+#[derive(Debug, Clone, Copy, Eq, Serialize, Hash)]
+pub enum TyKind {
+    Primitive(Primitive),
+    Void,
+    Struct(Ident),
+    Pointer(Ty),
+    Array(usize, Ty),
+    Infer,
+}
+
+/// Encodes a single type.
+#[derive(Debug, Clone, Copy, Eq, Serialize, Hash)]
+pub struct Ty {
+    pub id: NodeId,
+    pub kind: Intern<TyKind>,
+}
+
+impl From<TyKind> for Ty {
+    fn from(value: TyKind) -> Self {
+        Self {
+            id: NodeId::next(),
+            kind: Intern::new(value),
+        }
+    }
+}
+
+impl PartialEq for TyKind {
     fn eq(&self, other: &Self) -> bool {
-        use Type::*;
         match (self, other) {
-            (Int, Int) | (Char, Char) | (Void, Void) | (Unknown, Unknown) | (None, None) => true,
-            (Pointer(t1), Pointer(t2)) => (**t1).eq(&**t2),
-            (Array(s1, t1), Array(s2, t2)) => *s1 == *s2 && (**t1).eq(&**t2),
-            (Struct(s1), Struct(s2)) => *s1 == *s2,
+            (TyKind::Primitive(p1), TyKind::Primitive(p2)) => *p1 == *p2,
+            (TyKind::Void, TyKind::Void) => true,
+            (TyKind::Struct(s1), TyKind::Struct(s2)) => *s1 == *s2,
+            (TyKind::Pointer(t1), TyKind::Pointer(t2)) => *t1 == *t2,
+            (TyKind::Array(s1, t1), TyKind::Array(s2, t2)) => *s1 == *s2 && *t1 == *t2,
+            #[cfg(test)]
+            (TyKind::Infer, TyKind::Infer) => true,
             (_, _) => false,
         }
     }
 }
 
-impl Eq for Type {}
+impl PartialEq for Ty {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+    }
+}
 
-impl Display for Type {
+impl Display for Ident {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Type::*;
+        write!(f, "{}", self.name)
+    }
+}
+
+impl Display for Primitive {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Int => write!(f, "int"),
-            Char => write!(f, "char"),
-            Void => write!(f, "void"),
-            Unknown => write!(f, "UNKNOWN"),
-            None => write!(f, "NONE"),
-            Pointer(t) => {
-                write!(f, "{}*", **t)
-            }
-            Struct(s) => write!(f, "struct {}", s),
-            Array(s, t) => {
-                let mut out = Vec::new();
-                write!(&mut out, "{}", **t).ok().unwrap();
-                let inner_type = String::from_utf8(out).ok().unwrap();
+            Primitive::Int => write!(f, "int"),
+            Primitive::Char => write!(f, "char"),
+        }
+    }
+}
+use std::io::Write;
+
+impl Display for TyKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &Self::Primitive(p) => write!(f, "{p}"),
+            &Self::Void => write!(f, "void"),
+            &Self::Struct(id) => write!(f, "struct {id}"),
+            &Self::Pointer(ty) => write!(f, "{}*", ty),
+            &Self::Array(size, ty) => {
+                let mut out = vec![];
+                write!(&mut out, "{}", ty).unwrap();
+                let inner_type = String::from_utf8(out).unwrap();
                 let split_point = inner_type.find("[");
                 match split_point {
-                    Option::None => write!(f, "{}[{}]", inner_type, s),
+                    None => write!(f, "{inner_type}[{size}]"),
                     Some(i) => {
                         let (l, r) = inner_type.split_at(i);
-                        write!(f, "{}[{}]{}", l, s, r)
+                        write!(f, "{l}[{size}]{r}")
                     }
                 }
             }
+            &Self::Infer => write!(f, "_"),
         }
     }
 }
 
-// TODO: rewrite this using Display
-impl Writable for Type {
-    fn write<T: std::io::Write>(&self, writer: &mut Writer<T>, _: bool) -> Result<()> {
-        use Type::*;
-        match self {
-            Int | Char | Void | Unknown | None => {
-                write!(writer, "{}", self.to_string().to_lowercase())?
-            }
-            Pointer(t) => {
-                t.write(writer, false)?;
-                write!(writer, "*")?;
-            }
-            Struct(s) => write!(writer, "struct {}", s)?,
-            Array(s, t) => {
-                let mut out = Vec::new();
-                let mut new_writer = Writer::new(&mut out);
-                t.write(&mut new_writer, false)?;
-                let inner_type = String::from_utf8(out)?;
-                let split_point = inner_type.find("[");
-                match split_point {
-                    Option::None => write!(writer, "{}[{}]", inner_type, s)?,
-                    Some(i) => {
-                        let (l, r) = inner_type.split_at(i);
-                        write!(writer, "{}[{}]{}", l, s, r)?;
-                    }
-                };
-            }
-        };
-        Ok(())
+impl Display for Ty {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.kind)
+    }
+}
+
+impl From<&str> for Ident {
+    fn from(value: &str) -> Self {
+        Self {
+            name: Intern::from_ref(value),
+        }
+    }
+}
+
+impl From<String> for Ident {
+    fn from(value: String) -> Self {
+        Self {
+            name: Intern::new(value),
+        }
     }
 }

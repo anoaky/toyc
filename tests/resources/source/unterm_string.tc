@@ -1,8 +1,0 @@
-/*
-250
-*/
-
-void main() {
-    char *s;
-    s = (char*)"this is a string that never ends!
-}

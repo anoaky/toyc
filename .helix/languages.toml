@@ -1,6 +1,11 @@
 [[language]]
 name = "rust"
-formatter = {command = "rustfmt", args = ["+nightly"]}
+
+[language-server.rust-analyzer.config.imports]
+granularity.enforce = true
+
+[language-server.rust-analyzer.config.rustfmt]
+overrideCommand = [ "rustfmt", "+nightly", "--unstable-features", "--config", "imports_granularity=Crate,group_imports=StdExternalCrate" ]
 
 [language.debugger]
 name = "lldb-dap"

@@ -1,7 +1,0 @@
-/*
-245
-*/
-struct x {
-    int a;
-    int b
-};

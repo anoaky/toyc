@@ -1,607 +1,410 @@
-use std::{collections::VecDeque, path::Path};
-
-use anyhow::{bail, Ok, Result};
-
-use crate::{
-    ast::{DeclKind, ExprKind, Literal, Operator, StmtKind, Type},
-    lexer::{Category, Token, Tokeniser},
-    util::CompilerPass,
+//! Parses [`Tokens`](Token) into [`Items`](Item).
+//!
+#![doc = include_str!("../grammars/parser_grammar.md")]
+use chumsky::{
+    extra::Err,
+    input::{MapExtra, Stream, ValueInput},
+    pratt::{self, *},
+    prelude::*,
 };
 
-pub struct Parser {
-    errors: u32,
-    buffer: VecDeque<Token>,
-    tokeniser: Tokeniser,
-    token: Token,
-    last_error_token: Option<Token>,
-}
+use crate::{
+    ast::{
+        Item, ItemKind,
+        exprs::{Expr, ExprKind, Literal, Operator},
+        statements::{Stmt, StmtKind},
+        types::{Ident, Primitive, Ty, TyKind},
+    },
+    lexer::{SourceFile, Token, lex},
+};
 
-impl CompilerPass for Parser {
-    fn inc_error(&mut self) {
-        self.errors += 1;
-    }
+type Extras<'tok, 'src> = Err<Rich<'tok, Token<'src>>>;
 
-    fn num_errors(&self) -> u32 {
-        self.errors
-    }
-}
-
-/*
-    precedence:
-    =                                   (2, 1)
-    ||                                  (3, 4)
-    &&                                  (5, 6)
-    ==  !=                              (7, 8)
-    <   <=  >   >=                      (9, 10)
-    +   -                               (11, 12)
-    *   /   %                           (13, 14)
-    &val    *ptr    (type)    -x    +x  ((), 15)
-    ()      []      .                   (17, 18)
-*/
-
-fn infix_bp(category: Category) -> Option<(u8, u8)> {
-    use Category::*;
-    match category {
-        Assign => Some((2, 1)),
-        LogOr => Some((3, 4)),
-        LogAnd => Some((5, 6)),
-        Eq | Ne => Some((7, 8)),
-        Lt | Le | Gt | Ge => Some((9, 10)),
-        Plus | Minus => Some((11, 12)),
-        Asterisk | Div | Rem => Some((13, 14)),
-        _ => None,
+pub fn print_errors<'tok, 'src: 'tok>(
+    source: &ariadne::Source,
+    errs: Vec<Rich<'tok, Token<'src>>>,
+) {
+    for err in errs {
+        let reason = err.reason().clone().map_token(|t| t.to_string());
+        ariadne::Report::build(ariadne::ReportKind::Error, ((), err.span().into_range()))
+            .with_config(ariadne::Config::new().with_index_type(ariadne::IndexType::Byte))
+            .with_code(245)
+            .with_message(err.to_string())
+            .with_label(
+                ariadne::Label::new(((), err.span().into_range()))
+                    .with_message(reason.to_string())
+                    .with_color(ariadne::Color::Red),
+            )
+            .finish()
+            .eprint(source)
+            .unwrap();
     }
 }
 
-fn prefix_bp(category: Category) -> u8 {
-    use Category::*;
-    match category {
-        Plus | Minus | And | Asterisk => 15,
-        _ => panic!("No precedence for category {:?}", category),
+fn ident<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Ident, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    select! {
+        Token::Identifier(s) => Into::<Ident>::into(s)
     }
 }
 
-fn postfix_bp(category: Category) -> Option<u8> {
-    use Category::*;
-    match category {
-        LPar | Dot | LBrack => Some(17),
-        _ => None,
+fn literal<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Literal, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    select! {
+        Token::IntLiteral(i) => i.parse::<u32>().unwrap().into(),Token::CharLiteral(c) => any::<&str,Err<chumsky::error::EmptyErr>>().parse(c).into_result().unwrap().into(),Token::StrLiteral(s) => s.into()
     }
 }
 
-impl Parser {
-    pub fn from_path(path: &Path) -> Result<Self> {
-        let tokeniser = Tokeniser::from_path(path)?;
-        Self::with_tokeniser(tokeniser)
-    }
+fn expr<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Expr, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    recursive(|expr| {
+        let atom = choice((
+            literal().boxed().map(|l| l.into()),
+            ident().boxed().map(|id| id.into()),
+        ));
+        let expr_pratt = atom.clone().pratt((
+            infix(right(1), just(Token::Assign), |lhs, _, rhs, _| {
+                ExprKind::Assign(Box::new(lhs), Box::new(rhs)).into()
+            }),
+            infix(left(3), just(Token::LogOr), |lhs, _, rhs, _| {
+                ExprKind::BinOp(Box::new(lhs), Operator::Or, Box::new(rhs)).into()
+            }),
+            infix(left(5), just(Token::LogAnd), |lhs, _, rhs, _| {
+                ExprKind::BinOp(Box::new(lhs), Operator::And, Box::new(rhs)).into()
+            }),
+        ));
+        choice((
+            expr.delimited_by(just(Token::LPar), just(Token::RPar)),
+            expr_pratt,
+            atom,
+        ))
+    })
+}
 
-    pub fn with_tokeniser(mut tokeniser: Tokeniser) -> Result<Self> {
-        let first_token = tokeniser.next_token()?;
-        Ok(Self {
-            errors: 0,
-            buffer: VecDeque::new(),
-            tokeniser,
-            token: first_token,
-            last_error_token: None,
-        })
-    }
+fn static_var<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Item, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    just(Token::Static)
+        .ignore_then(ident())
+        .then_ignore(just(Token::Colon))
+        .then(
+            parse_type_strict()
+                .or_not()
+                .map(|ty| ty.unwrap_or(TyKind::Infer.into())),
+        )
+        .then(just(Token::Assign).ignore_then(literal()).or_not())
+        .then_ignore(just(Token::Semi))
+        .map(|((ident, ty), value)| ItemKind::Static((ident, ty, value).into()).into())
+}
 
-    pub fn parse(&mut self) -> Result<Vec<DeclKind>> {
-        self.parse_program()
-    }
+fn item<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Item, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    choice((static_var(), todo()))
+}
 
-    fn accept(&self, expected: Category) -> bool {
-        self.token.category() == expected
+fn array_type<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Vec<usize>, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    select! {
+        Token::IntLiteral(i) => i.parse::<usize>().unwrap(),
     }
+    .delimited_by(just(Token::LBrack), just(Token::RBrack))
+    .repeated()
+    .collect()
+}
 
-    fn accept_any(&self, expected: Vec<Category>) -> bool {
-        expected.contains(&self.token.category())
-    }
+fn base_type<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Ty, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    choice((
+        select! {
+            Token::Int => TyKind::Primitive(Primitive::Int).into(),Token::Char => TyKind::Primitive(Primitive::Char).into(),Token::Void => TyKind::Void.into(),Token::Underscore => TyKind::Infer.into()
+        },
+        struct_type(),
+    ))
+}
 
-    fn convert_token(&self, t: Token) -> Type {
-        match t.category() {
-            Category::Int => Type::Int,
-            Category::Char => Type::Char,
-            Category::Void => Type::Void,
-            _ => Type::Unknown,
+fn strict_base_type<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Ty, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    choice((
+        select! {
+            Token::Int => TyKind::Primitive(Primitive::Int).into(),Token::Char => TyKind::Primitive(Primitive::Char).into(),Token::Void => TyKind::Void.into()
+        },
+        struct_type(),
+    ))
+}
+
+fn pointer_type<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, usize, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    just(Token::And).repeated().count()
+}
+
+fn struct_type<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Ty, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    just(Token::Struct).ignore_then(select! {
+        Token::Identifier(s) => TyKind::Struct(s.into()).into()
+    })
+}
+
+/// See [grammars.md](../grammars/parser_grammar.md)
+fn type_parser<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Ty, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    let base_type = base_type().boxed();
+    let parse_type_1 = choice((
+        select! {
+            Token::IntLiteral(i) => i.parse::<usize>().unwrap(),
         }
-    }
+        .delimited_by(just(Token::LBrack), just(Token::RBrack))
+        .repeated()
+        .collect(),
+        empty().to(vec![]),
+    ));
+    recursive(|parse_type| {
+        choice((
+            base_type.then(parse_type_1.clone()).map(make_array_type),
+            just(Token::And)
+                .then(parse_type.clone())
+                .map(|(_, ty)| TyKind::Pointer(ty).into()),
+            parse_type
+                .delimited_by(just(Token::LPar), just(Token::RPar))
+                .then(parse_type_1.clone())
+                .map(make_array_type),
+        ))
+    })
+}
 
-    fn error(&mut self, expected: Vec<Category>) {
-        if self
-            .last_error_token
-            .clone()
-            .is_some_and(|t| t == self.token)
-        {
-            return;
+fn parse_type_strict<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Ty, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    let base_type = strict_base_type().boxed();
+    let parse_type_1 = choice((
+        select! {
+            Token::IntLiteral(i) => i.parse::<usize>().unwrap(),
         }
-        println!(
-            "Parsing error: expected {:?} found {:?} at {:?}",
-            expected,
-            self.token.category(),
-            self.token.position
-        );
-        self.inc_error();
-        self.last_error_token = Some(self.token.clone());
+        .delimited_by(just(Token::LBrack), just(Token::RBrack))
+        .repeated()
+        .collect(),
+        empty().to(vec![]),
+    ));
+    recursive(|parse_type| {
+        choice((
+            base_type.then(parse_type_1.clone()).map(make_array_type),
+            just(Token::And)
+                .then(parse_type.clone())
+                .map(|(_, ty)| TyKind::Pointer(ty).into()),
+            parse_type
+                .delimited_by(just(Token::LPar), just(Token::RPar))
+                .then(parse_type_1.clone())
+                .map(make_array_type),
+        ))
+    })
+}
+
+fn make_array_type((ty, sizes): (Ty, Vec<usize>)) -> Ty {
+    let mut ty = ty;
+    let mut sizes = sizes.clone();
+    while !sizes.is_empty() {
+        let size = sizes.pop().unwrap();
+        ty = TyKind::Array(size, ty).into();
+    }
+    ty
+}
+
+fn make_ptr_type(ty: Ty, indir: usize) -> Ty {
+    let mut ty = ty;
+    for _ in 0..indir {
+        ty = TyKind::Pointer(ty).into();
+    }
+    ty
+}
+
+/// Helper method for parsing, also useful for testing
+fn get_inputs<'tok, 'src: 'tok>(
+    source: &'src SourceFile,
+) -> impl ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>> {
+    let token_iter = lex(source);
+    Stream::from_iter(token_iter).map((0..source.source.len()).into(), |(t, s)| (t, s))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{fmt::Display, io::Write};
+
+    use anyhow::{Result, bail};
+    use ariadne::FileCache;
+    use chumsky::Parser;
+    use internment::Intern;
+    use rstest::{fixture, rstest};
+    use serde::Serialize;
+    use tempfile::NamedTempFile;
+
+    use crate::{
+        ast::types::{Primitive, Ty, TyKind},
+        lexer::SourceFile,
+        parser::base_type,
+    };
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
+    enum TyTestKind {
+        Int,
+        Char,
+        Void,
+        Struct,
+        Pointer,
+        Array,
+        Infer,
     }
 
-    fn expect(&mut self, expected: Category) -> Result<Token> {
-        self.expect_any(vec![expected])
-    }
-
-    fn expect_any(&mut self, expected: Vec<Category>) -> Result<Token> {
-        let token = self.token.clone();
-        for e in expected.clone() {
-            if e == token.category() {
-                self.next_token()?;
-                return Ok(token);
-            }
-        }
-        self.error(expected);
-        Ok(token)
-    }
-
-    fn is_fun(&mut self) -> Result<bool> {
-        use Category::*;
-        if !self.accept_any(vec![Struct, Int, Char, Void]) {
-            return Ok(false);
-        }
-
-        let mut k = if self.accept_any(vec![Struct]) { 2 } else { 1 };
-
-        while self.look_ahead(k)?.category() == Asterisk {
-            k += 1;
-        }
-
-        Ok(self.look_ahead(k + 1)?.category() == LPar)
-    }
-
-    fn next_token(&mut self) -> Result<()> {
-        if !self.buffer.is_empty() {
-            self.token = self.buffer.pop_front().unwrap();
-            Ok(())
-        } else {
-            match self.tokeniser.next_token() {
-                std::result::Result::Ok(t) => {
-                    self.token = t;
-                    Ok(())
-                }
-                Err(_) => bail!("Error reading next token"),
-            }
-        }
-    }
-
-    fn load_buffer(&mut self) -> Result<()> {
-        match self.tokeniser.next_token() {
-            std::result::Result::Ok(t) => {
-                self.buffer.push_back(t);
-                Ok(())
-            }
-            Err(_) => bail!("Error reading next token"),
-        }
-    }
-
-    fn look_ahead(&mut self, i: usize) -> Result<Token> {
-        while self.buffer.len() < i {
-            self.load_buffer()?;
-        }
-
-        match self.buffer.get(i - 1) {
-            None => bail!("Failed look ahead"),
-            Some(t) => Ok(t.clone()),
-        }
-    }
-
-    fn parse_atom(&mut self) -> Result<ExprKind> {
-        use Category::*;
-        let expr = match self.token.category() {
-            IntLiteral => {
-                let l = self.expect(IntLiteral)?;
-                ExprKind::Literal(Literal::Int(l.data.parse()?))
-            }
-            CharLiteral => {
-                let l = self.expect(CharLiteral)?;
-                ExprKind::Literal(Literal::Char(l.data.parse()?))
-            }
-            StrLiteral => {
-                let l = self.expect(StrLiteral)?;
-                ExprKind::Literal(Literal::Str(l.data))
-            }
-            Identifier => {
-                let id = self.expect(Identifier)?;
-                ExprKind::VarExpr(id.data)
-            }
-            Sizeof => {
-                self.expect(Sizeof)?;
-                self.expect(LPar)?;
-                let t = self.parse_types()?;
-                self.expect(RPar)?;
-                ExprKind::Literal(Literal::Sizeof(t))
-            }
-            LPar => {
-                self.expect(LPar)?;
-                if self.accept_any(vec![Int, Char, Void, Struct]) {
-                    let ty = self.parse_types()?;
-                    self.expect(RPar)?;
-                    let rhs = self.parse_expr(15)?;
-                    ExprKind::TypecastExpr(ty, Box::new(rhs))
-                } else {
-                    let lhs = self.parse_expr(0)?;
-                    self.expect(RPar)?;
-                    lhs
-                }
-            }
-            _ => {
-                self.expect_any(vec![
-                    IntLiteral,
-                    CharLiteral,
-                    StrLiteral,
-                    Identifier,
-                    Sizeof,
-                ])?;
-                ExprKind::InvalidExpr
-            }
-        };
-        Ok(expr)
-    }
-
-    fn parse_block(&mut self) -> Result<StmtKind> {
-        let mut stmts = vec![];
-        self.expect(Category::LBrace)?;
-        while !self.accept_any(vec![Category::RBrace, Category::Eof]) {
-            stmts.push(self.parse_stmt()?);
-        }
-        self.expect(Category::RBrace)?;
-        let block = StmtKind::Block { stmts };
-        Ok(block)
-    }
-
-    fn parse_expr(&mut self, min_bind: u8) -> Result<ExprKind> {
-        use Category::*;
-        let mut lhs = if self.accept_any(vec![Plus, Minus, Asterisk, And]) {
-            let token = self.expect_any(vec![Plus, Minus, Asterisk, And])?;
-            let rbind = prefix_bp(token.category());
-            let rhs = self.parse_expr(rbind)?;
-            match token.category() {
-                Plus => rhs,
-                Minus => ExprKind::BinOp(
-                    Box::new(ExprKind::Literal(Literal::Int(0))),
-                    Operator::Sub,
-                    Box::new(rhs),
-                ),
-                Asterisk => ExprKind::DerefExpr(Box::new(rhs)),
-                And => ExprKind::RefExpr(Box::new(rhs)),
-                _ => unreachable!(),
-            }
-        } else {
-            self.parse_atom()?
-        };
-        loop {
-            if !self.accept_any(vec![
-                Plus, Minus, Assign, Asterisk, Div, Rem, Lt, Le, Gt, Ge, Eq, Ne, LPar, Dot, LogOr,
-                LogAnd, LBrack,
-            ]) {
-                break;
-            }
-            let op = self.token.category();
-
-            if let Some(lbind) = postfix_bp(op) {
-                if lbind < min_bind {
-                    break;
-                }
-                self.next_token()?;
-                lhs = match op {
-                    LPar => {
-                        let mut args: Vec<ExprKind> = vec![];
-                        if !self.accept(RPar) {
-                            args.push(self.parse_expr(0)?);
-                            while self.accept(Comma) {
-                                self.next_token()?;
-                                args.push(self.parse_expr(0)?);
-                            }
-                        }
-                        self.expect(RPar)?;
-                        ExprKind::FunCallExpr(Box::new(lhs), args)
-                    }
-                    Dot => {
-                        let field_token = self.expect(Identifier)?;
-                        ExprKind::FieldAccessExpr(Box::new(lhs), field_token.data)
-                    }
-                    LBrack => {
-                        let ind = self.parse_expr(0)?;
-                        self.expect(RBrack)?;
-                        ExprKind::ArrayAccessExpr(Box::new(lhs), Box::new(ind))
-                    }
-                    _ => lhs,
-                };
-                continue;
-            }
-
-            if let Some((lbind, rbind)) = infix_bp(op) {
-                if lbind < min_bind {
-                    break;
-                }
-                self.next_token()?;
-                let rhs = self.parse_expr(rbind)?;
-                lhs = if op == Assign {
-                    ExprKind::Assign(Box::new(lhs), Box::new(rhs))
-                } else {
-                    let op = match op {
-                        Plus => Operator::Add,
-                        Minus => Operator::Sub,
-                        Asterisk => Operator::Mul,
-                        Div => Operator::Div,
-                        Rem => Operator::Mod,
-                        Lt => Operator::Lt,
-                        Le => Operator::Le,
-                        Gt => Operator::Gt,
-                        Ge => Operator::Ge,
-                        Eq => Operator::Eq,
-                        Ne => Operator::Ne,
-                        LogOr => Operator::Or,
-                        LogAnd => Operator::And,
-                        _ => unreachable!(),
-                    };
-                    ExprKind::BinOp(Box::new(lhs), op, Box::new(rhs))
-                };
-                continue;
-            }
-            break;
-        }
-        Ok(lhs)
-    }
-
-    fn parse_fun_decl(&mut self) -> Result<DeclKind> {
-        let return_type = self.parse_types()?;
-        let id = self.expect_any(vec![Category::Identifier])?;
-        self.expect_any(vec![Category::LPar])?;
-        let params = if !self.accept_any(vec![Category::RPar]) {
-            self.parse_params()?
-        } else {
-            vec![]
-        };
-        self.expect(Category::RPar)?;
-        Ok(DeclKind::FunDecl(return_type, id.data, params))
-    }
-
-    fn parse_includes(&mut self) -> Result<()> {
-        use Category::*;
-        if self.accept_any(vec![Include]) {
-            self.next_token()?;
-            self.expect_any(vec![StrLiteral])?;
-            self.parse_includes()
-        } else {
-            Ok(())
-        }
-    }
-
-    fn parse_param_or_field(&mut self) -> Result<DeclKind> {
-        use Category::*;
-        let mut ty = self.parse_types()?;
-        let id = self.expect_any(vec![Identifier])?;
-        let mut lens: VecDeque<usize> = VecDeque::new();
-        while self.accept_any(vec![LBrack]) {
-            self.expect_any(vec![LBrack])?;
-            let i = self.expect_any(vec![IntLiteral])?;
-            self.expect_any(vec![RBrack])?;
-            if i.category() == IntLiteral {
-                lens.push_front(i.data.parse::<usize>()?);
-            }
-        }
-        while !lens.is_empty() {
-            ty = Type::Array(
-                lens.pop_front()
-                    .expect("Failed to pop non-empty VecDeque ??"),
-                Box::new(ty),
-            );
-        }
-
-        Ok(DeclKind::VarDecl(ty, id.data, None))
-    }
-
-    fn parse_params(&mut self) -> Result<Vec<DeclKind>> {
-        let mut params = vec![];
-        params.push(self.parse_param_or_field()?);
-        while self.accept_any(vec![Category::Comma]) {
-            self.next_token()?;
-            params.push(self.parse_param_or_field()?);
-        }
-        Ok(params)
-    }
-
-    fn parse_program(&mut self) -> Result<Vec<DeclKind>> {
-        use Category::*;
-        self.parse_includes()?;
-        let mut prog: Vec<DeclKind> = vec![];
-
-        while self.accept_any(vec![Struct, Int, Char, Void]) {
-            if self.token.category() == Struct
-                && self.look_ahead(1)?.category() == Identifier
-                && self.look_ahead(2)?.category() == LBrace
-            {
-                prog.push(self.parse_struct_decl()?);
-            } else if self.is_fun()? {
-                let decl = {
-                    let decl = self.parse_fun_decl()?;
-                    if self.accept(LBrace) {
-                        let block = Box::new(self.parse_block()?);
-                        DeclKind::FunDefn {
-                            decl: Box::new(decl),
-                            block,
-                        }
-                    } else if self.accept(Semi) {
-                        self.next_token()?;
-                        decl
-                    } else {
-                        self.expect_any(vec![Semi, LBrace])?;
-                        decl
-                    }
-                };
-                prog.push(decl);
-            } else {
-                prog.push(self.parse_var_decls()?);
-                self.expect_any(vec![Semi])?;
-            }
-        }
-
-        self.expect_any(vec![Eof])?;
-        Ok(prog)
-    }
-
-    fn parse_stmt(&mut self) -> Result<StmtKind> {
-        use Category::*;
-        match self.token.category() {
-            LBrace => self.parse_block(),
-            While => {
-                self.next_token()?;
-                self.expect(LPar)?;
-                let e = self.parse_expr(0)?;
-                self.expect(RPar)?;
-                let s = self.parse_stmt()?;
-                let whl = StmtKind::While {
-                    expr: Box::new(e),
-                    stmt: Box::new(s),
-                };
-                Ok(whl)
-            }
-            If => {
-                self.next_token()?;
-                self.expect(LPar)?;
-                let expr = Box::new(self.parse_expr(0)?);
-                self.expect(RPar)?;
-                let then = Box::new(self.parse_stmt()?);
-                let els = if self.accept(Else) {
-                    self.next_token()?;
-                    Some(Box::new(self.parse_stmt()?))
-                } else {
-                    None
-                };
-                let stmt = StmtKind::If { expr, then, els };
-                Ok(stmt)
-            }
-            Return => {
-                self.next_token()?;
-                let rv = if !self.accept(Semi) {
-                    Some(Box::new(self.parse_expr(0)?))
-                } else {
-                    None
-                };
-                self.expect(Semi)?;
-                let ret = StmtKind::Return(rv);
-                Ok(ret)
-            }
-            Continue => {
-                self.next_token()?;
-                self.expect(Semi)?;
-                Ok(StmtKind::Continue)
-            }
-            Break => {
-                self.next_token()?;
-                self.expect(Semi)?;
-                Ok(StmtKind::Break)
-            }
-            Int | Char | Void | Struct => {
-                let decl = self.parse_var_decls()?;
-                self.expect(Semi)?;
-                Ok(StmtKind::Decl(decl))
-            }
-            _ => {
-                let expr = Box::new(self.parse_expr(0)?);
-                while self.token.category() != Semi && self.token.category() != Eof {
-                    self.expect(Semi)?;
-                    self.next_token()?;
-                }
-                self.expect(Semi)?;
-                Ok(StmtKind::ExprStmt(expr))
-            }
-        }
-    }
-
-    fn parse_struct_decl(&mut self) -> Result<DeclKind> {
-        use Category::*;
-        let ty = self.parse_struct_type()?;
-        let name = match &ty {
-            Type::Struct(s) => s.clone(),
-            _ => panic!("Expected struct type for struct"),
-        };
-        let mut fields: Vec<DeclKind> = vec![];
-        self.expect_any(vec![LBrace])?;
-        loop {
-            fields.push(self.parse_param_or_field()?);
-            self.expect_any(vec![Semi])?;
-            if !self.accept_any(vec![Int, Char, Void, Struct]) {
-                break;
-            }
-        }
-        self.expect_any(vec![RBrace])?;
-        self.expect_any(vec![Semi])?;
-        let decl = DeclKind::StructTypeDecl(ty, name, fields);
-        Ok(decl)
-    }
-
-    fn parse_struct_type(&mut self) -> Result<Type> {
-        use Category::*;
-        self.expect_any(vec![Struct])?;
-        let id = self.expect_any(vec![Identifier])?;
-        let ty = Type::Struct(id.data.clone());
-        Ok(ty)
-    }
-
-    fn parse_types(&mut self) -> Result<Type> {
-        use Category::*;
-        let mut ty = if self.token.category() == Struct {
-            self.parse_struct_type()?
-        } else {
-            let t = self.expect_any(vec![Int, Char, Void])?;
-            self.convert_token(t)
-        };
-        while self.accept_any(vec![Asterisk]) {
-            ty = Type::Pointer(Box::new(ty));
-            self.next_token()?;
-        }
-        Ok(ty)
-    }
-
-    fn parse_var_decls(&mut self) -> Result<DeclKind> {
-        use Category::*;
-        let mut ty = self.parse_types()?;
-        let mut ids: Vec<String> = vec![];
-        let mut exprs: Vec<Option<ExprKind>> = vec![];
-        loop {
-            let id = self.expect_any(vec![Identifier])?;
-            let mut lens: VecDeque<usize> = VecDeque::new();
-            while self.accept_any(vec![LBrack]) {
-                self.expect_any(vec![LBrack])?;
-                let i = self.expect_any(vec![IntLiteral])?;
-                self.expect_any(vec![RBrack])?;
-                if i.category() == IntLiteral {
-                    lens.push_front(i.data.parse::<usize>()?);
-                }
-            }
-            while !lens.is_empty() {
-                ty = Type::Array(
-                    lens.pop_front()
-                        .expect("Failed to pop non-empty VecDeque ??"),
-                    Box::new(ty),
-                );
-            }
-            let expr = if self.accept(Assign) {
-                self.next_token()?;
-                Some(self.parse_expr(0)?)
-            } else {
-                None
+    impl Display for TyTestKind {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let s = match self {
+                Self::Int => "int",
+                Self::Char => "char",
+                Self::Void => "void",
+                Self::Struct => "struct",
+                Self::Pointer => "pointer",
+                Self::Array => "array",
+                Self::Infer => "infer",
             };
-            ids.push(id.data);
-            exprs.push(expr);
-            if !self.accept(Comma) {
-                break;
-            }
-            self.next_token()?;
+            write!(f, "{}", s)
         }
-        if ids.len() == 1 {
-            Ok(DeclKind::VarDecl(ty, ids[0].clone(), exprs[0].clone()))
-        } else {
-            Ok(DeclKind::MultiVarDecl(ty, ids, exprs))
+    }
+
+    impl TyTestKind {
+        pub fn equals(&self, other: &TyKind) -> bool {
+            match (self, other) {
+                (Self::Int, TyKind::Primitive(Primitive::Int))
+                | (Self::Char, TyKind::Primitive(Primitive::Char))
+                | (Self::Void, TyKind::Void)
+                | (Self::Struct, TyKind::Struct(_))
+                | (Self::Pointer, TyKind::Pointer(_))
+                | (Self::Array, TyKind::Array(_, _))
+                | (Self::Infer, TyKind::Infer) => true,
+                (_, _) => false,
+            }
+        }
+    }
+
+    #[fixture]
+    fn cache() -> FileCache {
+        FileCache::default()
+    }
+
+    fn match_kinds<const N: usize>(kinds: [TyTestKind; N], entry_ty: Ty) {
+        let mut cur_kind = *entry_ty.kind;
+        for i in 0..N {
+            if !kinds[i].equals(&cur_kind) {
+                panic!("Mismatching kinds[{i}]: {0} != {cur_kind}", kinds[i])
+            }
+            match cur_kind {
+                TyKind::Primitive(_) | TyKind::Void | TyKind::Struct(_) | TyKind::Infer => {
+                    if i == N - 1 {
+                        return;
+                    } else {
+                        panic!("Unexpected end of chain with {cur_kind}");
+                    }
+                }
+                TyKind::Pointer(next_ty) | TyKind::Array(_, next_ty) => {
+                    if i == N - 1 {
+                        panic!(
+                            "Unexpected chain continues from {cur_kind} with {0}",
+                            *next_ty.kind
+                        );
+                    } else {
+                        cur_kind = *next_ty.kind;
+                    }
+                }
+            }
+        }
+    }
+
+    fn src(s: String, cache: FileCache) -> SourceFile {
+        let mut f = NamedTempFile::new().unwrap();
+        write!(f, "{}", s).unwrap();
+        SourceFile::from_path(f.path(), cache)
+    }
+
+    #[rstest]
+    #[case::int("23", "23")]
+    #[case::hello_world("\"Hello, world!\"", "\"Hello, world!\"")]
+    #[case::char_a("'a'", "'a'")]
+    fn test_literal(
+        #[case] input: String,
+        #[case] expected: String,
+        cache: FileCache,
+    ) -> Result<()> {
+        let src_file = src(input, cache);
+        let inputs = super::get_inputs(&src_file);
+        match super::literal().parse(inputs).into_result() {
+            Ok(recovered) => assert_eq!(recovered.to_string(), expected),
+            Err(errs) => {
+                super::print_errors(&src_file.source, errs);
+                bail!("Parsing error");
+            }
+        };
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::infer("_", [TyTestKind::Infer])]
+    #[case::int("int", [TyTestKind::Int])]
+    #[case::char("char", [TyTestKind::Char])]
+    #[case::int_ptr("&char", [TyTestKind::Pointer, TyTestKind::Char])]
+    #[case::int_arr("char[4]", [TyTestKind::Array, TyTestKind::Char])]
+    #[case::ptr_arr("(&int)[10]", [TyTestKind::Array, TyTestKind::Pointer, TyTestKind::Int])]
+    #[case::arr_ptr("&int[10]", [TyTestKind::Pointer, TyTestKind::Array, TyTestKind::Int])]
+    fn test_type<const N: usize>(
+        #[case] input: String,
+        #[case] expected: [TyTestKind; N],
+        cache: FileCache,
+    ) {
+        let src_file = src(input, cache);
+        let inputs = super::get_inputs(&src_file);
+        match super::type_parser().parse(inputs).into_result() {
+            Ok(recovered) => match_kinds(expected, recovered),
+            Err(errs) => {
+                super::print_errors(&src_file.source, errs);
+                panic!("Parsing error");
+            }
+        }
+    }
+
+    #[rstest]
+    #[case::int_literal("24", "24")]
+    #[case::ident("foo", "foo")]
+    #[case::lit_assign("foo = 42", "(foo = 42)")]
+    #[case::double_assign("foo = bar = 42", "(foo = (bar = 42))")]
+    #[case::log_or("foo = 42 || 24", "(foo = (42 || 24))")]
+    #[case::log_ops("foo = 42 || 24 && 24 || 42", "(foo = ((42 || (24 && 24)) || 42))")]
+    fn test_expr(#[case] input: String, #[case] expected: String, cache: FileCache) {
+        let src_file = src(input, cache);
+        let inputs = super::get_inputs(&src_file);
+        match super::expr().parse(inputs).into_result() {
+            Ok(recovered) => assert_eq!(recovered.to_string(), expected),
+            Err(errs) => {
+                super::print_errors(&src_file.source, errs);
+                panic!("Parsing error");
+            }
         }
     }
 }

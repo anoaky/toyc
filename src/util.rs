@@ -70,7 +70,7 @@ impl<T: Write> Write for Writer<'_, T> {
     }
 }
 
-#[derive(Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct NodeId(pub u32);
 
 #[derive(Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]

@@ -1,511 +1,269 @@
-use core::fmt;
-use std::{
-    fs::File,
-    io::{BufReader, ErrorKind, Read, Result},
-    path::Path,
-};
+use std::{fmt::Display, path::Path};
 
-use crate::util::CompilerPass;
+use ariadne::{Cache, FileCache, Report, Source};
+use chumsky::span::SimpleSpan;
+use logos::Logos;
+use serde::Serialize;
 
-pub struct Tokeniser {
-    errors: u32,
-    reader: Reader,
-}
-
-impl CompilerPass for Tokeniser {
-    fn inc_error(&mut self) {
-        self.errors += 1;
-    }
-
-    fn num_errors(&self) -> u32 {
-        self.errors
-    }
-}
-
-impl Tokeniser {
-    pub fn from_path(fp: &Path) -> Result<Self> {
-        let f = File::open(fp)?;
-        let reader = Reader::from_file(f)?;
-        Ok(Self { errors: 0, reader })
-    }
-
-    fn invalid(&mut self, c: char, line: u32, col: u32) -> Result<Token> {
-        println!(
-            "Lexing error: unrecognised character {} at {}:{}",
-            c, line, col
-        );
-        self.inc_error();
-        Ok(Token::new(Category::Invalid, None, line, col))
-    }
-
-    fn try_finish_char(&mut self, data: String) -> Result<Token> {
-        let c = self.reader.next()?;
-        if c == '\'' {
-            Ok(Token::new(
-                Category::CharLiteral,
-                Some(data),
-                self.reader.line,
-                self.reader.col,
-            ))
-        } else {
-            self.invalid(c, self.reader.line, self.reader.col)
-        }
-    }
-
-    fn try_read_include(&mut self, data: String) -> Result<Token> {
-        let expected = "#include";
-        if data.clone() + &self.reader.peek().to_string() == expected {
-            self.reader.next()?;
-            Ok(Token::new(
-                Category::Include,
-                None,
-                self.reader.line,
-                self.reader.col,
-            ))
-        } else if data.len() < expected.len() && expected.starts_with(&data) {
-            let c = self.reader.next()?;
-            self.try_read_include(format!("{}{}", data, c))
-        } else {
-            self.invalid(self.reader.peek(), self.reader.line, self.reader.col)
-        }
-    }
-
-    fn try_read_int(&mut self, data: String) -> Result<Token> {
-        if !self.reader.peek().is_ascii_digit() {
-            Ok(Token::new(
-                Category::IntLiteral,
-                Some(data),
-                self.reader.line,
-                self.reader.col,
-            ))
-        } else {
-            let mut data = data.clone();
-            data.push(self.reader.next()?);
-            self.try_read_int(data)
-        }
-    }
-
-    fn try_read_keyword(&mut self, data: String, keywords: Vec<String>) -> Result<Token> {
-        use Category::*;
-        let filtered: Vec<String> = keywords
-            .iter()
-            .filter(|&s| s.len() >= data.len() && s.starts_with(&data))
-            .cloned()
-            .collect();
-        if !self.reader.has_next() || !is_valid_ident(self.reader.peek()) {
-            let category = match data.as_str() {
-                "int" => Int,
-                "void" => Void,
-                "char" => Char,
-                "if" => If,
-                "else" => Else,
-                "while" => While,
-                "return" => Return,
-                "struct" => Struct,
-                "sizeof" => Sizeof,
-                "continue" => Continue,
-                "break" => Break,
-                "include" => Include,
-                _ => Identifier,
-            };
-            if category == Identifier {
-                Ok(Token::new(
-                    category,
-                    Some(data),
-                    self.reader.line,
-                    self.reader.col,
-                ))
-            } else {
-                Ok(Token::blank(category, self.reader.line, self.reader.col))
-            }
-        } else {
-            let mut new_data = data.clone();
-            new_data.push(self.reader.next()?);
-            self.try_read_keyword(new_data, filtered)
-        }
-    }
-
-    fn try_process_escape(&mut self) -> Result<Option<char>> {
-        let c = self.reader.next()?;
-        Ok(match c {
-            '0' | 'a' | 'b' | 't' | 'n' | 'r' | '\'' | '"' | '\\' => Some(c),
-            _ => None,
-        })
-    }
-
-    fn try_read_char(&mut self) -> Result<Token> {
-        let c = self.reader.next()?;
-        if c.is_ascii_alphanumeric() || is_special(c) || c == '"' || c == ' ' {
-            self.try_finish_char(format!("{}", c))
-        } else if c == '\\' {
-            match self.try_process_escape()? {
-                Some(c) => self.try_finish_char(format!("{}", c)),
-                None => self.invalid(c, self.reader.line, self.reader.col),
-            }
-        } else {
-            self.invalid(c, self.reader.line, self.reader.col)
-        }
-    }
-
-    fn try_read_string(&mut self, mut data: String) -> Result<Token> {
-        let c = self.reader.next()?;
-        if c == '"' {
-            Ok(Token::new(
-                Category::StrLiteral,
-                Some(data),
-                self.reader.line,
-                self.reader.col,
-            ))
-        } else {
-            match c {
-                '\\' => match self.try_process_escape()? {
-                    Some(c) => {
-                        data.push(c);
-                        self.try_read_string(data)
-                    }
-                    None => self.invalid(c, self.reader.line, self.reader.col),
-                },
-                _ if c.is_ascii_alphanumeric() || is_special(c) || c == '\'' || c == ' ' => {
-                    data.push(c);
-                    self.try_read_string(data)
-                }
-                _ => self.invalid(c, self.reader.line, self.reader.col),
-            }
-        }
-    }
-
-    fn skip_line(&mut self) -> Result<()> {
-        if !self.reader.has_next() || self.reader.next()? == '\n' {
-            Ok(())
-        } else {
-            self.skip_line()
-        }
-    }
-
-    fn skip_long_comment(&mut self, mut buffer: String) -> Result<Option<Token>> {
-        if !self.reader.has_next() {
-            return Ok(Some(self.invalid(
-                buffer.as_bytes()[buffer.len() - 1] as char,
-                self.reader.line,
-                self.reader.col,
-            )?));
-        }
-        let c = self.reader.next()?;
-        if buffer.ends_with('*') && c == '/' {
-            Ok(None)
-        } else {
-            buffer.push(c);
-            self.skip_long_comment(buffer)
-        }
-    }
-
-    pub fn next_token(&mut self) -> Result<Token> {
-        use Category::*;
-        let line = self.reader.line;
-        let col = self.reader.col;
-        if self.reader.has_next() {
-            let c = self.reader.next()?;
-
-            let tok = match c {
-                '\'' => self.try_read_char()?,
-                '"' => self.try_read_string("".to_owned())?,
-                '#' => self.try_read_include("#".to_string())?,
-                '{' => Token::blank(LBrace, line, col),
-                '}' => Token::blank(RBrace, line, col),
-                '(' => Token::blank(LPar, line, col),
-                ')' => Token::blank(RPar, line, col),
-                '[' => Token::blank(LBrack, line, col),
-                ']' => Token::blank(RBrack, line, col),
-                ';' => Token::blank(Semi, line, col),
-                ',' => Token::blank(Comma, line, col),
-                '+' => Token::blank(Plus, line, col),
-                '-' => Token::blank(Minus, line, col),
-                '%' => Token::blank(Rem, line, col),
-                '*' => Token::blank(Asterisk, line, col),
-                '.' => Token::blank(Dot, line, col),
-                '=' => {
-                    if self.reader.peek() == '=' {
-                        self.reader.next()?;
-                        Token::blank(Eq, line, col)
-                    } else {
-                        Token::blank(Assign, line, col)
-                    }
-                }
-                '&' => {
-                    if self.reader.peek() == '&' {
-                        self.reader.next()?;
-                        Token::blank(LogAnd, line, col)
-                    } else {
-                        Token::blank(And, line, col)
-                    }
-                }
-                '|' => {
-                    if self.reader.peek() == '|' {
-                        self.reader.next()?;
-                        Token::blank(LogOr, line, col)
-                    } else {
-                        self.invalid(c, line, col)?
-                    }
-                }
-                '!' => {
-                    if self.reader.peek() == '=' {
-                        self.reader.next()?;
-                        Token::blank(Ne, line, col)
-                    } else {
-                        self.invalid(c, line, col)?
-                    }
-                }
-                '<' => {
-                    if self.reader.peek() == '=' {
-                        self.reader.next()?;
-                        Token::blank(Le, line, col)
-                    } else {
-                        Token::blank(Lt, line, col)
-                    }
-                }
-                '>' => {
-                    if self.reader.peek() == '=' {
-                        self.reader.next()?;
-                        Token::blank(Ge, line, col)
-                    } else {
-                        Token::blank(Gt, line, col)
-                    }
-                }
-                '/' => match self.reader.peek() {
-                    '/' => {
-                        self.skip_line()?;
-                        self.next_token()?
-                    }
-                    '*' => {
-                        self.reader.next()?;
-                        match self.skip_long_comment("".to_owned())? {
-                            Some(t) => t,
-                            None => self.next_token()?,
-                        }
-                    }
-                    _ => Token::blank(Div, line, col),
-                },
-                _ if c.is_ascii_whitespace() => self.next_token()?,
-                _ if is_valid_ident_start(c) => self.try_read_keyword(
-                    c.to_string(),
-                    vec![
-                        "if".to_string(),
-                        "int".to_string(),
-                        "void".to_string(),
-                        "char".to_string(),
-                        "else".to_string(),
-                        "while".to_string(),
-                        "return".to_string(),
-                        "struct".to_string(),
-                        "sizeof".to_string(),
-                        "continue".to_string(),
-                        "break".to_string(),
-                    ],
-                )?,
-                _ if c.is_ascii_digit() => self.try_read_int(c.to_string())?,
-                _ => self.invalid(c, line, col)?,
-            };
-            Ok(tok)
-        } else {
-            Ok(Token::new(Category::Eof, None, line, col))
-        }
-    }
-}
-
-fn is_valid_ident_start(c: char) -> bool {
-    c.is_ascii_alphabetic() || c == '_'
-}
-
-fn is_valid_ident(c: char) -> bool {
-    c.is_ascii_alphanumeric() || c == '_'
-}
-
-fn is_special(c: char) -> bool {
-    matches!(
-        c,
-        '`' | '~'
-            | '@'
-            | '!'
-            | '$'
-            | '#'
-            | '^'
-            | '*'
-            | '%'
-            | '&'
-            | '('
-            | ')'
-            | '['
-            | ']'
-            | '{'
-            | '}'
-            | '<'
-            | '>'
-            | '+'
-            | '='
-            | '_'
-            | '-'
-            | '|'
-            | '/'
-            | ';'
-            | ':'
-            | ','
-            | '.'
-            | '?'
-    )
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Category {
-    Identifier,
+#[derive(Logos, Clone, Debug, PartialEq, Serialize)]
+#[logos(skip r#"\s+"#)]
+#[logos(skip r#"//.*\n"#)]
+#[logos(subpattern alpha = r#"[a-zA-Z]"#)]
+#[logos(subpattern num = r#"[0-9]"#)]
+#[logos(subpattern alphanum = r#"(?&alpha)|(?&num)"#)]
+#[logos(subpattern special = r#"[\x20\x21\x23-\x26\x28-\x2F\x3A-\x40\x5B\x5D-\x60\x7B-\x7E]"#)]
+pub enum Token<'a> {
+    #[regex(r#"[_a-zA-Z][_a-zA-Z0-9]*"#)]
+    Identifier(&'a str),
+    #[token("=")]
     Assign,
+    #[token("{")]
     LBrace,
+    #[token("}")]
     RBrace,
+    #[token("(")]
     LPar,
+    #[token(")")]
     RPar,
+    #[token("[")]
     LBrack,
+    #[token("]")]
     RBrack,
+    #[token(";")]
     Semi,
+    #[token(":")]
+    Colon,
+    #[token("_")]
+    Underscore,
+    #[token(",")]
     Comma,
+    #[token("int")]
     Int,
+    #[token("void")]
     Void,
+    #[token("char")]
     Char,
+    #[token("if")]
     If,
+    #[token("else")]
     Else,
+    #[token("while")]
     While,
+    #[token("return")]
     Return,
+    #[token("struct")]
     Struct,
-    Sizeof,
+    #[token("continue")]
     Continue,
+    #[token("break")]
     Break,
-    Include,
-    CharLiteral,
-    StrLiteral,
-    IntLiteral,
+    #[token("static")]
+    Static,
+    #[regex(r#"'((?&alphanum)|(?&special)|"| |\\(["'ntr]|x[0-9]{2}))'"#)]
+    CharLiteral(&'a str),
+    #[regex(r#""((?&alphanum)|(?&special)|'| |\\(["'ntr]|x[0-9]{2}))*""#)]
+    StrLiteral(&'a str),
+    #[regex(r#"[0-9]+"#)]
+    IntLiteral(&'a str),
+    #[token("&&")]
     LogAnd,
+    #[token("||")]
     LogOr,
+    #[token("==")]
     Eq,
+    #[token("!=")]
     Ne,
+    #[token(">")]
     Gt,
+    #[token("<")]
     Lt,
+    #[token("<=")]
     Le,
+    #[token(">=")]
     Ge,
+    #[token("+")]
     Plus,
+    #[token("-")]
     Minus,
+    #[token("*")]
     Asterisk,
+    #[token("/")]
     Div,
+    #[token("%")]
     Rem,
+    #[token("&")]
     And,
+    #[token(".")]
     Dot,
-    Eof,
+    #[token("=>")]
+    FatArrow,
+    #[token("let")]
+    Let,
+    #[token(":=")]
+    Define,
     Invalid,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Token {
-    category: Category,
-    pub data: String,
-    pub position: (u32, u32), // line, col
-}
-
-impl Token {
-    pub fn new(category: Category, data: Option<String>, line: u32, col: u32) -> Self {
-        match data {
-            Some(s) => Self {
-                category,
-                data: s,
-                position: (line, col),
-            },
-            None => Self {
-                category,
-                data: "".to_string(),
-                position: (line, col),
-            },
-        }
-    }
-
-    pub fn blank(category: Category, line: u32, col: u32) -> Self {
-        Self::new(category, None, line, col)
-    }
-
-    pub fn category(&self) -> Category {
-        self.category
-    }
-}
-
-impl fmt::Display for Token {
+impl<'a> Display for Token<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.data.is_empty() {
-            write!(f, "{:?}", self.category)
-        } else {
-            write!(f, "{:?}({})", self.category, self.data)
+        use Token::*;
+        match self {
+            Identifier(s) => write!(f, "{s}"),
+            Assign => write!(f, "="),
+            LBrace => write!(f, "{{"),
+            RBrace => write!(f, "}}"),
+            LPar => write!(f, "("),
+            RPar => write!(f, ")"),
+            RBrack => write!(f, "["),
+            LBrack => write!(f, "]"),
+            Semi => write!(f, ";"),
+            Colon => write!(f, ":"),
+            Underscore => write!(f, "_"),
+            Comma => write!(f, ","),
+            Int => write!(f, "int"),
+            Void => write!(f, "void"),
+            Char => write!(f, "char"),
+            If => write!(f, "if"),
+            Else => write!(f, "else"),
+            While => write!(f, "while"),
+            Return => write!(f, "return"),
+            Struct => write!(f, "struct"),
+            Continue => write!(f, "continue"),
+            Break => write!(f, "break"),
+            Static => write!(f, "static"),
+            CharLiteral(c) => write!(f, "{c}"),
+            StrLiteral(s) => write!(f, "{s}"),
+            IntLiteral(i) => write!(f, "{i}"),
+            LogAnd => write!(f, "&&"),
+            LogOr => write!(f, "||"),
+            Eq => write!(f, "=="),
+            Ne => write!(f, "!="),
+            Gt => write!(f, ">"),
+            Lt => write!(f, "<"),
+            Le => write!(f, "<="),
+            Ge => write!(f, ">="),
+            Plus => write!(f, "+"),
+            Minus => write!(f, "-"),
+            Asterisk => write!(f, "*"),
+            Div => write!(f, "/"),
+            Rem => write!(f, "%"),
+            And => write!(f, "&"),
+            Dot => write!(f, "."),
+            FatArrow => write!(f, "=>"),
+            Let => write!(f, "let"),
+            Define => write!(f, ":="),
+            Invalid => write!(f, "INVALID"),
         }
     }
 }
 
-struct Reader {
-    input: BufReader<File>,
-    buf: [u8; 2],
-    pub line: u32,
-    pub col: u32,
+pub struct SourceFile {
+    pub name: String,
+    pub source: Source,
 }
 
-impl Reader {
-    pub fn from_file(f: File) -> Result<Self> {
-        let mut input = BufReader::new(f);
-        let mut buf = [0, 0]; // TODO: rework eventually for slight memory efficiency gains; two `u8`s are unnecessary here
-        input.read_exact(&mut buf[1..])?;
-        Ok(Self {
-            input,
-            buf,
-            line: 1,
-            col: 1,
+impl SourceFile {
+    pub fn from_path(id: &Path, mut cache: FileCache) -> Self {
+        let source = cache.fetch(id).unwrap().clone();
+        Self {
+            name: id.to_str().unwrap().to_string(),
+            source,
+        }
+    }
+}
+
+pub fn lex<'src>(
+    src: &'src SourceFile,
+) -> impl std::iter::Iterator<Item = (Token<'src>, SimpleSpan)> {
+    Token::lexer(src.source.text())
+        .spanned()
+        .map(|(tok, span)| -> (Token<'src>, SimpleSpan) {
+            match tok {
+                Ok(t) => match t {
+                    Token::CharLiteral(c) => (
+                        Token::CharLiteral(c.strip_prefix("'").unwrap().strip_suffix("'").unwrap()),
+                        span.into(),
+                    ),
+                    Token::StrLiteral(s) => (
+                        Token::StrLiteral(
+                            s.strip_prefix("\"").unwrap().strip_suffix("\"").unwrap(),
+                        ),
+                        span.into(),
+                    ),
+                    t => (t, span.into()),
+                },
+                Err(()) => {
+                    let span = Into::<SimpleSpan>::into(span);
+                    (Token::Invalid, span)
+                }
+            }
         })
-    }
+}
 
-    pub fn next(&mut self) -> Result<char> {
-        self.buf[0] = self.buf[1];
-        match self.input.read_exact(&mut self.buf[1..]) {
-            Ok(()) => (),
-            Err(err) if err.kind() == ErrorKind::UnexpectedEof => self.buf[1] = 0, // end of file
-            Err(err) => return Err(err),
-        }
-        if self.buf[0] as char == '\n' {
-            self.line += 1;
-            self.col = 1;
-        } else {
-            self.col += 1;
-        }
-        Ok(self.buf[0] as char)
-    }
-
-    pub fn peek(&self) -> char {
-        self.buf[1] as char
-    }
-
-    pub fn has_next(&self) -> bool {
-        self.buf[1] != 0
-    }
+pub fn print_errors<'src, I>(src: &'src SourceFile, token_iter: I)
+where
+    I: std::iter::Iterator<Item = (Token<'src>, SimpleSpan)>,
+{
+    token_iter.for_each(|(tok, span)| match tok {
+        Token::Invalid => Report::build(ariadne::ReportKind::Error, (&src.name, span.into_range()))
+            .with_config(ariadne::Config::new().with_index_type(ariadne::IndexType::Byte))
+            .with_code(250)
+            .with_message("Lexing error")
+            .with_label(
+                ariadne::Label::new((&src.name, span.into_range()))
+                    .with_message("Unrecognized character")
+                    .with_color(ariadne::Color::Red),
+            )
+            .finish()
+            .eprint((&src.name, &src.source))
+            .unwrap(),
+        _ => (),
+    });
 }
 
 #[cfg(test)]
-mod test {
-    use std::{fs::File, io::Result};
+mod tests {
+    use std::io::Write;
 
-    use crate::lexer::Reader;
+    use ariadne::FileCache;
+    use rstest::{fixture, rstest};
+    use tempfile::NamedTempFile;
 
-    #[test]
-    fn check_next() -> Result<()> {
-        let mut reader = Reader::from_file(File::open("tests/resources/source/decls.tc")?)?;
-        assert_eq!(reader.next()?, '/');
-        Ok(())
+    use crate::lexer::SourceFile;
+
+    #[fixture]
+    fn cache() -> FileCache {
+        FileCache::default()
     }
 
-    #[test]
-    fn check_peek() -> Result<()> {
-        let mut reader = Reader::from_file(File::open("tests/resources/source/decls.tc")?)?;
-        assert_eq!(reader.peek(), '/');
-        assert_eq!(reader.next()?, '/');
-        assert_eq!(reader.peek(), '*');
-        Ok(())
+    fn src(s: String, cache: FileCache) -> SourceFile {
+        let mut f = NamedTempFile::new().unwrap();
+        write!(f, "{}", s).unwrap();
+        SourceFile::from_path(f.path(), cache)
+    }
+
+    #[rstest]
+    #[case::plus("+", "+")]
+    #[case::minus("-", "-")]
+    #[case::a("'a'", "a")]
+    #[case::newline(r"'\n'", r"\n")]
+    #[should_panic]
+    #[case::question_mark("int x?;", "")]
+    #[case::main_defn("void main() {\n\treturn;\n}", "voidmain(){return;}")]
+    #[case::hello_world("\"Hello, world!\"", "Hello, world!")]
+    #[case::single_line_comment("// comment\nvoid main() {}", "voidmain(){}")]
+    fn test_lexer(#[case] input: String, #[case] expected: String, cache: FileCache) {
+        let src_file = src(input, cache);
+        let token_iter = super::lex(&src_file);
+        let recovered = token_iter
+            .map(|(t, _)| {
+                if t == super::Token::Invalid {
+                    panic!("Invalid token");
+                } else {
+                    t.to_string()
+                }
+            })
+            .collect::<String>();
+        assert_eq!(recovered, expected);
     }
 }

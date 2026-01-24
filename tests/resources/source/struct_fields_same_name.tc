@@ -1,7 +1,0 @@
-/*
-240
-*/
-struct bad {
-    int field;
-    int field;
-};
