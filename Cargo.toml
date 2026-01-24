@@ -1,24 +1,6 @@
-[package]
-name = "nockyc"
-version = "0.1.0-alpha.1"
-edition = "2024"
-repository = "https://github.com/anoaky/nockyc"
+[workspace]
+members = ["nockyc"]
+resolver = "3"
 
-[dependencies]
-anyhow = "1.0.100"
-ariadne = "0.6.0"
-chumsky = { version = "0.12.0", features = ["bytes", "pratt"] }
-internment = { version = "0.8.6", features = ["arena", "serde"] }
-logos = "0.13.0"
-ron = "0.12.0"
-serde = {version ="1.0.228", features=["derive", "rc"]}
-
-[dev-dependencies]
-insta = {version = "1.46.0", features = ["yaml", "glob", "ron"]}
-rstest = "0.26.1"
-tempfile = "3.24.0"
-
-# The profile that 'dist' will build with
-[profile.dist]
-inherits = "release"
-lto = "thin"
+[workspace.metadata.release]
+tag-prefix = "{{crate_name}}/"

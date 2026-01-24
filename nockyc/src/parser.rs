@@ -1,6 +1,6 @@
 //! Parses [`Tokens`](Token) into [`Items`](Item).
 //!
-#![doc = include_str!("../grammars/parser_grammar.md")]
+#![doc = include_str!("../../grammars/parser_grammar.md")]
 use chumsky::{
     extra::Err,
     input::{MapExtra, Stream, ValueInput},
@@ -10,12 +10,12 @@ use chumsky::{
 
 use crate::{
     ast::{
-        Item, ItemKind,
         exprs::{Expr, ExprKind, Literal, Operator},
         statements::{Stmt, StmtKind},
         types::{Ident, Primitive, Ty, TyKind},
+        Item, ItemKind,
     },
-    lexer::{SourceFile, Token, lex},
+    lexer::{lex, SourceFile, Token},
 };
 
 type Extras<'tok, 'src> = Err<Rich<'tok, Token<'src>>>;
@@ -250,7 +250,7 @@ fn get_inputs<'tok, 'src: 'tok>(
 mod tests {
     use std::{fmt::Display, io::Write};
 
-    use anyhow::{Result, bail};
+    use anyhow::{bail, Result};
     use ariadne::FileCache;
     use chumsky::Parser;
     use internment::Intern;
