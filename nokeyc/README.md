@@ -1,8 +1,14 @@
-
 # Usage
 ```sh
-  nockyc [options] <source>
-  Options:
-  -lexer: Run the lexer on <source>, then exit
-  -parser: Run the parser on <source>, then reconstruct the program from the AST and print to stdout
+Compiler for nokey-lang
+
+Usage: nokeyc [OPTIONS] <FILE>
+
+Arguments:
+  <FILE>  The source .nky file to process
+
+Options:
+  -p, --pass <PASS>  Select a specific compiler pass to test [default: all] [possible values: lexer, parser, all]
+  -h, --help         Print help
+  -V, --version      Print version
 ```

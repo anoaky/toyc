@@ -1,4 +1,4 @@
-# Nocky
+# Nokey
 
 A strongly- and statically-typed language, inspired by Rust.
 
