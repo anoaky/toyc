@@ -1,4 +1,4 @@
-# Nokey
+# Akyno
 
 A strongly- and statically-typed language, inspired by Rust.
 

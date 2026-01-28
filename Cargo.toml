@@ -1,5 +1,5 @@
 [workspace]
-members = ["nokeyc"]
+members = ["akynoc"]
 resolver = "3"
 
 [workspace.metadata.release]

@@ -1,9 +1,9 @@
 [package]
-name = "nokeyc"
+name = "akynoc"
 version = "0.1.0-alpha.2"
 edition = "2024"
-repository = "https://github.com/anoaky/nockyc"
-description = "Compiler for nokey-lang"
+repository = "https://github.com/anoaky/akyno"
+description = "Akyno Compiler"
 
 [dependencies]
 anyhow = "1.0.100"

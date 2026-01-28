@@ -1,11 +1,11 @@
 # Usage
 ```sh
-Compiler for nokey-lang
+Akyno Compiler
 
-Usage: nokeyc [OPTIONS] <FILE>
+Usage: akynoc [OPTIONS] <FILE>
 
 Arguments:
-  <FILE>  The source .nky file to process
+  <FILE>  The source .akn file to process
 
 Options:
   -p, --pass <PASS>  Select a specific compiler pass to test [default: all] [possible values: lexer, parser, all]

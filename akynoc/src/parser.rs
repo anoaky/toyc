@@ -41,6 +41,17 @@ pub fn print_errors<'tok, 'src: 'tok>(
     }
 }
 
+macro_rules! impl_parser {
+    ( $n:ident, $t:ty, $( $b:tt )* ) => {
+        fn $n<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, $t, Extras<'tok, 'src>>
+        where
+            I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+        {
+            $($b)*
+        }
+    }
+}
+
 fn ident<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Ident, Extras<'tok, 'src>>
 where
     I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
@@ -170,9 +181,9 @@ where
 {
     just(Token::Static)
         .ignore_then(ident())
-        .then_ignore(just(Token::Colon))
         .then(
-            parse_type_strict()
+            just(Token::Colon)
+                .ignore_then(parse_type_strict())
                 .or_not()
                 .map(|ty| ty.unwrap_or(TyKind::Infer.into())),
         )
@@ -186,6 +197,54 @@ where
     I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
 {
     choice((static_var(), todo()))
+}
+
+impl_parser! {
+    break_parser,
+    Stmt,
+    just(Token::Break).then(just(Token::Semi)).to(StmtKind::Break.into())
+}
+
+impl_parser! {
+    continue_parser,
+    Stmt,
+    just(Token::Continue).then(just(Token::Semi)).to(StmtKind::Continue.into())
+}
+
+fn local_var_decl<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Stmt, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    just(Token::Let)
+        .ignore_then(ident())
+        .then_ignore(just(Token::Colon))
+        .then(parse_type_strict())
+        .then_ignore(just(Token::Semi))
+        .map(|(ident, ty)| StmtKind::Local((ident, ty, None).into()).into())
+}
+
+fn local_var_defn<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Stmt, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    choice((
+        just(Token::Let)
+            .ignore_then(ident())
+            .then_ignore(just(Token::Colon))
+            .then(type_parser())
+            .then_ignore(just(Token::Assign))
+            .then(expr())
+            .then_ignore(just(Token::Semi))
+            .map(|((ident, ty), expr)| StmtKind::Local((ident, ty, Some(expr)).into()).into()),
+        just(Token::Let)
+            .ignore_then(ident())
+            .then_ignore(just(Token::Define))
+            .then(expr())
+            .then_ignore(just(Token::Semi))
+            .map(|(ident, expr)| {
+                StmtKind::Local((ident, TyKind::Infer.into(), Some(expr)).into()).into()
+            }),
+    ))
 }
 
 fn array_type<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Vec<usize>, Extras<'tok, 'src>>
