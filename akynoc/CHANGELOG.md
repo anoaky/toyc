@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changes
 - Another language rename to `akyno`
+- Reworked parser using memoization to allow left recursion
 
 ### Fixes
 - Fix lexing of long comments
