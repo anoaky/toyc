@@ -22,9 +22,9 @@ use crate::{
 
 type Extras<'tok, 'src> = Err<Rich<'tok, Token<'src>>>;
 
-/// Returns a parser that parses a [`SourceFile`] into a [`Vec`] of [`Items`](`Item`)
+/// Parses a [`SourceFile`] into a [`Vec`] of [`Items`](`Item`)
 pub fn parse<'tok, 'src: 'tok>(src: &'src SourceFile) -> Vec<Item> {
-    let inputs = get_inputs(src);
+    let inputs = token_stream(src);
     match item()
         .boxed()
         .repeated()
@@ -38,6 +38,14 @@ pub fn parse<'tok, 'src: 'tok>(src: &'src SourceFile) -> Vec<Item> {
             panic!("Parsing failed")
         }
     }
+}
+
+/// Returns a parser that parses a [`SourceFile`] into a [`Vec`] of [`Items`](`Item`)
+pub fn parser<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Vec<Item>, Extras<'tok, 'src>>
+where
+    I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
+{
+    item().boxed().repeated().collect::<Vec<_>>()
 }
 
 pub fn print_errors<'tok, 'src: 'tok>(
@@ -59,6 +67,13 @@ pub fn print_errors<'tok, 'src: 'tok>(
             .eprint(source)
             .unwrap();
     }
+}
+
+pub fn token_stream<'tok, 'src: 'tok>(
+    source: &'src SourceFile,
+) -> impl ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>> {
+    let token_iter = lex(source);
+    Stream::from_iter(token_iter).map((0..source.source.len()).into(), |(t, s)| (t, s))
 }
 
 fn ident<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Ident, Extras<'tok, 'src>>
@@ -301,7 +316,16 @@ where
             Some(els) => StmtKind::If(expr, Box::new(then), Some(Box::new(els))).into(),
             None => StmtKind::If(expr, Box::new(then), None).into(),
         });
-        let expr_stmt = expr().boxed().map(|exp| StmtKind::Expr(exp).into());
+        let ret = group((
+            just(Token::Return).ignored(),
+            expr().boxed().or_not(),
+            just(Token::Semi).ignored(),
+        ))
+        .map(|(_, expr, _)| StmtKind::Return(expr).into());
+        let expr_stmt = expr()
+            .boxed()
+            .then_ignore(just(Token::Semi).or_not())
+            .map(|exp| StmtKind::Expr(exp).into());
         let brk = group((just(Token::Break), just(Token::Semi))).to(StmtKind::Break.into());
         let cnt = group((just(Token::Continue), just(Token::Semi))).to(StmtKind::Continue.into());
         choice((
@@ -310,6 +334,7 @@ where
             local_var_defn,
             whl,
             if_parser,
+            ret,
             expr_stmt,
             brk,
             cnt,
@@ -364,14 +389,6 @@ fn make_array_type((ty, sizes): (Ty, Vec<usize>)) -> Ty {
     ty
 }
 
-/// Helper method for parsing, also useful for testing
-fn get_inputs<'tok, 'src: 'tok>(
-    source: &'src SourceFile,
-) -> impl ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>> {
-    let token_iter = lex(source);
-    Stream::from_iter(token_iter).map((0..source.source.len()).into(), |(t, s)| (t, s))
-}
-
 #[cfg(test)]
 mod tests {
     use std::io::Write;
@@ -405,7 +422,7 @@ mod tests {
         cache: FileCache,
     ) -> Result<()> {
         let src_file = src(input, cache);
-        let inputs = super::get_inputs(&src_file);
+        let inputs = super::token_stream(&src_file);
         match super::literal().parse(inputs).into_result() {
             Ok(recovered) => assert_eq!(recovered.to_string(), expected),
             Err(errs) => {
@@ -427,7 +444,7 @@ mod tests {
     #[case::multidim_arr("int[4][5]", "(int[4][5])")]
     fn test_type(#[case] input: String, #[case] expected: String, cache: FileCache) {
         let src_file = src(input, cache);
-        let inputs = super::get_inputs(&src_file);
+        let inputs = super::token_stream(&src_file);
         match super::typ().parse(inputs).into_result() {
             Ok(recovered) => assert_eq!(recovered.to_string(), expected),
             Err(errs) => {
@@ -452,7 +469,7 @@ mod tests {
     #[case::simple_fn_call("x(1, 2, 3)", "(x(1, 2, 3))")]
     fn test_expr(#[case] input: String, #[case] expected: String, cache: FileCache) {
         let src_file = src(input, cache);
-        let inputs = super::get_inputs(&src_file);
+        let inputs = super::token_stream(&src_file);
         match super::expr().parse(inputs).into_result() {
             Ok(recovered) => assert_eq!(recovered.to_string(), expected),
             Err(errs) => {

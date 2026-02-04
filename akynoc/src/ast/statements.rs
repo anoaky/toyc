@@ -31,6 +31,7 @@ pub enum StmtKind {
     While(Expr, Box<Stmt>),
     If(Expr, Box<Stmt>, Option<Box<Stmt>>),
     Expr(Expr),
+    Return(Option<Expr>),
     Continue,
     Break,
 }

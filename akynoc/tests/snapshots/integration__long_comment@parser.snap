@@ -1,0 +1,6 @@
+---
+source: akynoc/tests/integration.rs
+expression: ast
+snapshot_kind: text
+---
+[]

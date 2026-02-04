@@ -4,9 +4,14 @@ use std::{
     path::PathBuf,
 };
 
-use akynoc::lexer::{lex, SourceFile, Token};
+use akynoc::{
+    ast::Item,
+    lexer::{lex, SourceFile, Token},
+    parser,
+};
 use anyhow::Result;
 use ariadne::FileCache;
+use chumsky::Parser;
 use insta::assert_ron_snapshot;
 use rstest::rstest;
 const LEXER_FAIL: u32 = 250;
@@ -34,17 +39,14 @@ fn test_lexer<'a>(src: &'a SourceFile) -> (u32, Vec<Token<'a>>) {
     return (PASS, rv);
 }
 
-// fn test_parser(path: &Path) -> Result<(u32, Vec<Item>)> {
-//     let tokeniser = Tokeniser::from_path(path).unwrap();
-//     let mut parser = Parser::with_tokeniser(tokeniser)?;
-//     let program = parser.parse()?;
-//     let exit_code = if parser.has_error() {
-//         PARSER_FAIL
-//     } else {
-//         PASS
-//     };
-//     Ok((exit_code, program))
-// }
+fn test_parser<'a>(src: &'a SourceFile) -> (u32, Vec<Item>) {
+    let token_stream = parser::token_stream(&src);
+    let parser = parser::parser();
+    match parser.parse(token_stream).into_result() {
+        Ok(ast) => (PASS, ast),
+        Err(errs) => (PARSER_FAIL, vec![]),
+    }
+}
 
 // fn test_sem(path: &Path) -> Result<(u32, HirPool<TypedHir>)> {
 //     let mut sem_analysis = SemanticAnalysis::from_path(path)?;
@@ -97,6 +99,15 @@ fn test(
     if lexer_expected == PASS {
         set_snapshot_suffix!("lexer");
         assert_ron_snapshot!(path.file_stem().unwrap().to_str().unwrap(), tokens);
+    }
+
+    if expected_exit_code < LEXER_FAIL {
+        let (parser_actual, ast) = test_parser(&src);
+        assert_eq!(parser_expected, parser_actual);
+        if parser_expected == PASS {
+            set_snapshot_suffix!("parser");
+            assert_ron_snapshot!(path.file_stem().unwrap().to_str().unwrap(), ast);
+        }
     }
     Ok(())
 }

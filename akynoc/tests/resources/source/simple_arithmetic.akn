@@ -1,0 +1,11 @@
+// 0
+
+add(x: int, y: int): int {
+    x + y
+}
+
+main(): void {
+    let x := 1;
+    let y := 2;
+    add(x, y);
+}

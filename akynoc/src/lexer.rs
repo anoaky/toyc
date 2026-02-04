@@ -8,7 +8,7 @@ use serde::Serialize;
 #[derive(Logos, Clone, Debug, PartialEq, Serialize)]
 #[logos(skip r#"\s+"#)]
 #[logos(skip r#"//.*"#)]
-#[logos(skip r#"(?ms)/\*.*\*/"#)]
+#[logos(skip r#"/\*[^*]*\*+([^/*][^*]*\*+)*/"#)]
 #[logos(subpattern alpha = r#"[a-zA-Z]"#)]
 #[logos(subpattern num = r#"[0-9]"#)]
 #[logos(subpattern alphanum = r#"(?&alpha)|(?&num)"#)]
