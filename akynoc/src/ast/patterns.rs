@@ -1,0 +1,56 @@
+use std::{fmt::Display, hash::Hash};
+
+use internment::Intern;
+use serde::Serialize;
+
+use crate::util::NodeId;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
+pub struct Ident {
+    pub name: Intern<String>,
+}
+
+impl Display for Ident {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+#[derive(Debug, Clone, Eq, Serialize)]
+pub enum PatternKind {
+    Single(Ident),
+    Tuple(Vec<Ident>),
+}
+
+#[derive(Debug, Clone, Eq, Serialize)]
+pub struct Pattern {
+    pub id: NodeId,
+    pub kind: Intern<PatternKind>,
+}
+
+impl PartialEq for PatternKind {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Single(id1), Self::Single(id2)) => *id1 == *id2,
+            (Self::Tuple(v1), Self::Tuple(v2)) => {
+                v1.len() == v2.len() && v1.iter().zip(v2).all(|(id1, id2)| *id1 == *id2)
+            }
+            _ => false,
+        }
+    }
+}
+
+impl Hash for PatternKind {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Self::Single(id) => id.hash(state),
+            Self::Tuple(v) => v.hash(state),
+        }
+    }
+}
+
+impl PartialEq for Pattern {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+    }
+}
