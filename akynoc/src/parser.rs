@@ -1,6 +1,5 @@
 //! Parses [`Tokens`](Token) into [`Items`](Item).
 //!
-#![doc = include_str!("../../grammars/parser_grammar.md")]
 use chumsky::{
     extra::Err,
     input::{Stream, ValueInput},
