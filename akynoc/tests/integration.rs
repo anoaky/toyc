@@ -31,16 +31,15 @@ fn test_lexer<'a>(src: &'a SourceFile) -> (u32, Vec<Token<'a>>) {
     let tokens = lex(src).map(|(t, _)| t).collect::<Vec<_>>();
     let rv = tokens.clone();
     for tok in tokens {
-        match tok {
-            Token::Invalid => return (LEXER_FAIL, rv),
-            _ => (),
+        if tok == Token::Invalid {
+            return (LEXER_FAIL, rv);
         }
     }
-    return (PASS, rv);
+    (PASS, rv)
 }
 
-fn test_parser<'a>(src: &'a SourceFile) -> (u32, Vec<Item>) {
-    let token_stream = parser::token_stream(&src);
+fn test_parser(src: &SourceFile) -> (u32, Vec<Item>) {
+    let token_stream = parser::token_stream(src);
     let parser = parser::parser();
     match parser.parse(token_stream).into_result() {
         Ok(ast) => (PASS, ast),
