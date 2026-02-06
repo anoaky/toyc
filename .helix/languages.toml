@@ -17,3 +17,16 @@ name = "semantic analysis"
 request = "launch"
 completion = [ { name = "binary", completion = "filename" }, { name = "source", completion = "filename" } ]
 args = { console = "internalConsole", program = "{0}", args = [ "-sem", "{1}" ] }
+
+[[language]]
+name = "akyno"
+scope = "source.akyno"
+injection-regex = "akn|akyno"
+file-types = ["akn"]
+indent = { tab-width = 4, unit = "    " }
+comment-tokens = ["//"]
+block-comment-tokens = { start = "/*", end = "*/" }
+
+[[grammar]]
+name = "akyno"
+source = { path = "/Users/wrenzh/Projects/tree-sitter-akyno" }

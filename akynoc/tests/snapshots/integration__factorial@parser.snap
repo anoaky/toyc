@@ -1,0 +1,329 @@
+---
+source: akynoc/tests/integration.rs
+expression: ast
+snapshot_kind: text
+---
+[
+  Item(
+    id: "[nodeid]",
+    kind: FnDefn(FnDefn(
+      sig: FnSig(
+        name: Ident(
+          name: "fact_rec",
+        ),
+        params: [
+          Param(
+            name: Ident(
+              name: "n",
+            ),
+            ty: Ty(
+              id: "[nodeid]",
+              kind: Primitive(Int),
+            ),
+          ),
+        ],
+        ty: Ty(
+          id: "[nodeid]",
+          kind: Primitive(Int),
+        ),
+      ),
+      decl: None,
+      block: Stmt(
+        id: "[nodeid]",
+        kind: Block(Block(
+          stmts: [
+            Stmt(
+              id: "[nodeid]",
+              kind: If(Expr(
+                id: "[nodeid]",
+                kind: BinOp(Expr(
+                  id: "[nodeid]",
+                  kind: Ident(Ident(
+                    name: "n",
+                  )),
+                ), Le, Expr(
+                  id: "[nodeid]",
+                  kind: Literal(Literal(
+                    value: Int(1),
+                  )),
+                )),
+              ), Stmt(
+                id: "[nodeid]",
+                kind: Block(Block(
+                  stmts: [
+                    Stmt(
+                      id: "[nodeid]",
+                      kind: Expr(Expr(
+                        id: "[nodeid]",
+                        kind: Literal(Literal(
+                          value: Int(1),
+                        )),
+                      )),
+                    ),
+                  ],
+                )),
+              ), Some(Stmt(
+                id: "[nodeid]",
+                kind: Block(Block(
+                  stmts: [
+                    Stmt(
+                      id: "[nodeid]",
+                      kind: Expr(Expr(
+                        id: "[nodeid]",
+                        kind: BinOp(Expr(
+                          id: "[nodeid]",
+                          kind: Ident(Ident(
+                            name: "n",
+                          )),
+                        ), Times, Expr(
+                          id: "[nodeid]",
+                          kind: CallFn(CallFn(
+                            name: Expr(
+                              id: "[nodeid]",
+                              kind: Ident(Ident(
+                                name: "fact_rec",
+                              )),
+                            ),
+                            args: [
+                              Expr(
+                                id: "[nodeid]",
+                                kind: BinOp(Expr(
+                                  id: "[nodeid]",
+                                  kind: Ident(Ident(
+                                    name: "n",
+                                  )),
+                                ), Minus, Expr(
+                                  id: "[nodeid]",
+                                  kind: Literal(Literal(
+                                    value: Int(1),
+                                  )),
+                                )),
+                              ),
+                            ],
+                          )),
+                        )),
+                      )),
+                    ),
+                  ],
+                )),
+              ))),
+            ),
+          ],
+        )),
+      ),
+    )),
+  ),
+  Item(
+    id: "[nodeid]",
+    kind: FnDefn(FnDefn(
+      sig: FnSig(
+        name: Ident(
+          name: "fact_iter",
+        ),
+        params: [
+          Param(
+            name: Ident(
+              name: "n",
+            ),
+            ty: Ty(
+              id: "[nodeid]",
+              kind: Primitive(Int),
+            ),
+          ),
+        ],
+        ty: Ty(
+          id: "[nodeid]",
+          kind: Primitive(Int),
+        ),
+      ),
+      decl: None,
+      block: Stmt(
+        id: "[nodeid]",
+        kind: Block(Block(
+          stmts: [
+            Stmt(
+              id: "[nodeid]",
+              kind: Local(Local(
+                name: Ident(
+                  name: "x",
+                ),
+                ty: Ty(
+                  id: "[nodeid]",
+                  kind: Infer,
+                ),
+                value: Some(Expr(
+                  id: "[nodeid]",
+                  kind: Literal(Literal(
+                    value: Int(1),
+                  )),
+                )),
+              )),
+            ),
+            Stmt(
+              id: "[nodeid]",
+              kind: For(Pattern(
+                id: "[nodeid]",
+                kind: RangePattern(Ident(
+                  name: "i",
+                ), Inclusive(Expr(
+                  id: "[nodeid]",
+                  kind: Literal(Literal(
+                    value: Int(1),
+                  )),
+                ), Expr(
+                  id: "[nodeid]",
+                  kind: Ident(Ident(
+                    name: "n",
+                  )),
+                ))),
+              ), Stmt(
+                id: "[nodeid]",
+                kind: Block(Block(
+                  stmts: [
+                    Stmt(
+                      id: "[nodeid]",
+                      kind: Expr(Expr(
+                        id: "[nodeid]",
+                        kind: Assign(Expr(
+                          id: "[nodeid]",
+                          kind: Ident(Ident(
+                            name: "x",
+                          )),
+                        ), Expr(
+                          id: "[nodeid]",
+                          kind: BinOp(Expr(
+                            id: "[nodeid]",
+                            kind: Ident(Ident(
+                              name: "x",
+                            )),
+                          ), Times, Expr(
+                            id: "[nodeid]",
+                            kind: Ident(Ident(
+                              name: "i",
+                            )),
+                          )),
+                        )),
+                      )),
+                    ),
+                  ],
+                )),
+              )),
+            ),
+            Stmt(
+              id: "[nodeid]",
+              kind: Expr(Expr(
+                id: "[nodeid]",
+                kind: Ident(Ident(
+                  name: "x",
+                )),
+              )),
+            ),
+          ],
+        )),
+      ),
+    )),
+  ),
+  Item(
+    id: "[nodeid]",
+    kind: FnDefn(FnDefn(
+      sig: FnSig(
+        name: Ident(
+          name: "main",
+        ),
+        params: [],
+        ty: Ty(
+          id: "[nodeid]",
+          kind: Void,
+        ),
+      ),
+      decl: None,
+      block: Stmt(
+        id: "[nodeid]",
+        kind: Block(Block(
+          stmts: [
+            Stmt(
+              id: "[nodeid]",
+              kind: Local(Local(
+                name: Ident(
+                  name: "x",
+                ),
+                ty: Ty(
+                  id: "[nodeid]",
+                  kind: Infer,
+                ),
+                value: Some(Expr(
+                  id: "[nodeid]",
+                  kind: Literal(Literal(
+                    value: Int(3),
+                  )),
+                )),
+              )),
+            ),
+            Stmt(
+              id: "[nodeid]",
+              kind: Local(Local(
+                name: Ident(
+                  name: "f1",
+                ),
+                ty: Ty(
+                  id: "[nodeid]",
+                  kind: Infer,
+                ),
+                value: Some(Expr(
+                  id: "[nodeid]",
+                  kind: CallFn(CallFn(
+                    name: Expr(
+                      id: "[nodeid]",
+                      kind: Ident(Ident(
+                        name: "fact_rec",
+                      )),
+                    ),
+                    args: [
+                      Expr(
+                        id: "[nodeid]",
+                        kind: Ident(Ident(
+                          name: "x",
+                        )),
+                      ),
+                    ],
+                  )),
+                )),
+              )),
+            ),
+            Stmt(
+              id: "[nodeid]",
+              kind: Local(Local(
+                name: Ident(
+                  name: "f2",
+                ),
+                ty: Ty(
+                  id: "[nodeid]",
+                  kind: Infer,
+                ),
+                value: Some(Expr(
+                  id: "[nodeid]",
+                  kind: CallFn(CallFn(
+                    name: Expr(
+                      id: "[nodeid]",
+                      kind: Ident(Ident(
+                        name: "fact_iter",
+                      )),
+                    ),
+                    args: [
+                      Expr(
+                        id: "[nodeid]",
+                        kind: Ident(Ident(
+                          name: "x",
+                        )),
+                      ),
+                    ],
+                  )),
+                )),
+              )),
+            ),
+          ],
+        )),
+      ),
+    )),
+  ),
+]

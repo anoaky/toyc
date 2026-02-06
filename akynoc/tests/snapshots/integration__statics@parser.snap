@@ -1,0 +1,90 @@
+---
+source: akynoc/tests/integration.rs
+expression: ast
+snapshot_kind: text
+---
+[
+  Item(
+    id: "[nodeid]",
+    kind: Static(StaticDecl(
+      ident: Ident(
+        name: "static_int_full",
+      ),
+      ty: Ty(
+        id: "[nodeid]",
+        kind: Primitive(Int),
+      ),
+      value: Some(Literal(
+        value: Int(0),
+      )),
+    )),
+  ),
+  Item(
+    id: "[nodeid]",
+    kind: Static(StaticDecl(
+      ident: Ident(
+        name: "static_int_infer",
+      ),
+      ty: Ty(
+        id: "[nodeid]",
+        kind: Infer,
+      ),
+      value: Some(Literal(
+        value: Int(1),
+      )),
+    )),
+  ),
+  Item(
+    id: "[nodeid]",
+    kind: Static(StaticDecl(
+      ident: Ident(
+        name: "static_int_undef",
+      ),
+      ty: Ty(
+        id: "[nodeid]",
+        kind: Primitive(Int),
+      ),
+      value: None,
+    )),
+  ),
+  Item(
+    id: "[nodeid]",
+    kind: FnDefn(FnDefn(
+      sig: FnSig(
+        name: Ident(
+          name: "main",
+        ),
+        params: [],
+        ty: Ty(
+          id: "[nodeid]",
+          kind: Void,
+        ),
+      ),
+      decl: None,
+      block: Stmt(
+        id: "[nodeid]",
+        kind: Block(Block(
+          stmts: [
+            Stmt(
+              id: "[nodeid]",
+              kind: Expr(Expr(
+                id: "[nodeid]",
+                kind: Assign(Expr(
+                  id: "[nodeid]",
+                  kind: Ident(Ident(
+                    name: "static_int_undef",
+                  )),
+                ), Expr(
+                  id: "[nodeid]",
+                  kind: Literal(Literal(
+                    value: Int(2),
+                  )),
+                )),
+              )),
+            ),
+          ],
+        )),
+      ),
+    )),
+  ),
+]

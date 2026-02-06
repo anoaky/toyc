@@ -1,0 +1,10 @@
+// 0
+
+static static_int_full: int = 0;
+static static_int_infer = 1;
+static static_int_undef: int;
+
+main(): void {
+    static_int_undef = 2;
+    // TBC
+}

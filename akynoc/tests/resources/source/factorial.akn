@@ -1,0 +1,23 @@
+// 0
+
+fact_rec(n: int): int {
+    if (n <= 1) {
+        1
+    } else {
+        n * fact_rec(n - 1)
+    }
+}
+
+fact_iter(n: int): int {
+    let x := 1;
+    for (i: [1; n]) {
+        x = x * i;
+    }
+    x
+}
+
+main(): void {
+    let x := 3;
+    let f1 := fact_rec(x);
+    let f2 := fact_iter(x);
+}

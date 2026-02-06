@@ -1,0 +1,6 @@
+---
+source: akynoc/tests/integration.rs
+expression: tokens
+snapshot_kind: text
+---
+[]

@@ -1,0 +1,16 @@
+// 0
+
+struct list {
+    e: &void;
+    next: &struct list;
+}
+
+memcpy(source: &void, destination: &void, bytes: int): void {
+    let src := (&char) source;
+    let dst := (&char) destination;
+    for (i : [0; bytes)) {
+        dst[i] = src[i];
+    }
+}
+
+main(): void {}

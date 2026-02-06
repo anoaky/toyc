@@ -1,0 +1,35 @@
+---
+source: akynoc/tests/integration.rs
+expression: tokens
+snapshot_kind: text
+---
+[
+  Static,
+  Identifier("static_int_full"),
+  Colon,
+  Int,
+  Assign,
+  IntLiteral("0"),
+  Semi,
+  Static,
+  Identifier("static_int_infer"),
+  Assign,
+  IntLiteral("1"),
+  Semi,
+  Static,
+  Identifier("static_int_undef"),
+  Colon,
+  Int,
+  Semi,
+  Identifier("main"),
+  LPar,
+  RPar,
+  Colon,
+  Void,
+  LBrace,
+  Identifier("static_int_undef"),
+  Assign,
+  IntLiteral("2"),
+  Semi,
+  RBrace,
+]

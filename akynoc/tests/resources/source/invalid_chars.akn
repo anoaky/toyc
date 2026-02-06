@@ -1,0 +1,5 @@
+// 250
+
+fn main(): void {
+	let x? = 3;
+}
