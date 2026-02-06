@@ -1,14 +1,16 @@
+//! Constructs for encoding expressions
 use std::fmt::Display;
 
 use internment::Intern;
 use serde::Serialize;
 
 use crate::{
-    ast::types::{Ident, Ty},
+    ast::types::{Ident, Ty, TyKind},
     lexer::Token,
     util::NodeId,
 };
 
+/// Encodes a single value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
 pub enum Value {
     Invalid,
@@ -41,6 +43,9 @@ impl From<&str> for Value {
     }
 }
 
+/// Encodes an interned [`Value`].
+///
+/// This construct exists to simplify the construction of interned literals.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
 pub struct Literal {
     pub value: Intern<Value>,
@@ -78,6 +83,7 @@ impl From<&str> for Literal {
     }
 }
 
+/// Encodes the valid unary and binary operators.
 #[derive(Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum Operator {
     Add,
@@ -95,6 +101,7 @@ pub enum Operator {
     And,
 }
 
+/// Encodes a function call.
 #[derive(Clone, Serialize)]
 pub struct CallFn {
     /// This must always have kind [`ExprKind::Ident`].
@@ -104,6 +111,7 @@ pub struct CallFn {
     pub args: Vec<Expr>,
 }
 
+/// Encodes the kind of an [`Expr`].
 #[derive(Clone, Serialize)]
 pub enum ExprKind {
     Invalid,
@@ -119,10 +127,14 @@ pub enum ExprKind {
     FieldAccess(Box<Expr>, Ident),
 }
 
+/// Encodes a single expression in the language.
 #[derive(Clone, Serialize)]
 pub struct Expr {
     pub id: NodeId,
     pub kind: ExprKind,
+    /// This field will only have meaningful value after type analysis.
+    /// It will be [`TyKind::Infer`] for all expressions produced by the parser.
+    pub ty: Ty,
 }
 
 impl From<ExprKind> for Expr {
@@ -130,6 +142,7 @@ impl From<ExprKind> for Expr {
         Self {
             id: NodeId::next(),
             kind: value,
+            ty: TyKind::Infer.into(),
         }
     }
 }

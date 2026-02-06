@@ -19,6 +19,7 @@ use crate::{
     util::NodeId,
 };
 
+/// Encodes the kind of an [`Item`].
 #[derive(Clone, Serialize)]
 pub enum ItemKind {
     Static(StaticDecl),
@@ -27,13 +28,16 @@ pub enum ItemKind {
     FnDefn(FnDefn),
 }
 
-/// Top-level declaration
+/// Any top-level declaration.
+///
+/// An Akyno program consists of a series of [`Items`](`Item`).
 #[derive(Clone, Serialize)]
 pub struct Item {
     pub id: NodeId,
     pub kind: ItemKind,
 }
 
+/// A statically-allocated variable.
 #[derive(Clone, Eq, Serialize)]
 pub struct StaticDecl {
     pub ident: Ident,

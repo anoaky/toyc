@@ -1,7 +1,9 @@
+//! Constructs for encoding structs.
 use serde::Serialize;
 
 use crate::ast::types::{Ident, Ty, TyKind};
 
+/// Encodes a single field in a [`StructDecl`].
 #[derive(Clone, Serialize)]
 pub struct Field {
     pub name: Ident,
@@ -17,6 +19,7 @@ impl Field {
     }
 }
 
+/// Encodes a struct.
 #[derive(Clone, Serialize)]
 pub struct StructDecl {
     pub name: Ident,
