@@ -22,24 +22,6 @@ use crate::{
 
 type Extras<'tok, 'src> = Err<Rich<'tok, Token<'src>>>;
 
-/// Parses a [`SourceFile`] into a [`Vec`] of [`Items`](`Item`)
-pub fn parse<'tok, 'src: 'tok>(src: &'src SourceFile) -> Vec<Item> {
-    let inputs = token_stream(src);
-    match item()
-        .boxed()
-        .repeated()
-        .collect::<Vec<Item>>()
-        .parse(inputs)
-        .into_result()
-    {
-        Ok(ast) => ast,
-        Err(errs) => {
-            print_errors(&src.source, errs);
-            panic!("Parsing failed")
-        }
-    }
-}
-
 /// Returns a parser that parses a [`SourceFile`] into a [`Vec`] of [`Items`](`Item`)
 pub fn parser<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Vec<Item>, Extras<'tok, 'src>>
 where
