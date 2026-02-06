@@ -50,12 +50,24 @@ snapshot_kind: text
                   kind: Ident(Ident(
                     name: "x",
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 ), Add, Expr(
                   id: "[nodeid]",
                   kind: Ident(Ident(
                     name: "y",
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
+                ty: Ty(
+                  id: "[nodeid]",
+                  kind: Infer,
+                ),
               )),
             ),
           ],
@@ -96,6 +108,10 @@ snapshot_kind: text
                   kind: Literal(Literal(
                     value: Int(1),
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
               )),
             ),
@@ -114,6 +130,10 @@ snapshot_kind: text
                   kind: Literal(Literal(
                     value: Int(2),
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
               )),
             ),
@@ -127,6 +147,10 @@ snapshot_kind: text
                     kind: Ident(Ident(
                       name: "add",
                     )),
+                    ty: Ty(
+                      id: "[nodeid]",
+                      kind: Infer,
+                    ),
                   ),
                   args: [
                     Expr(
@@ -134,15 +158,27 @@ snapshot_kind: text
                       kind: Ident(Ident(
                         name: "x",
                       )),
+                      ty: Ty(
+                        id: "[nodeid]",
+                        kind: Infer,
+                      ),
                     ),
                     Expr(
                       id: "[nodeid]",
                       kind: Ident(Ident(
                         name: "y",
                       )),
+                      ty: Ty(
+                        id: "[nodeid]",
+                        kind: Infer,
+                      ),
                     ),
                   ],
                 )),
+                ty: Ty(
+                  id: "[nodeid]",
+                  kind: Infer,
+                ),
               )),
             ),
           ],

@@ -74,12 +74,24 @@ snapshot_kind: text
                   kind: Ident(Ident(
                     name: "static_int_undef",
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 ), Expr(
                   id: "[nodeid]",
                   kind: Literal(Literal(
                     value: Int(2),
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
+                ty: Ty(
+                  id: "[nodeid]",
+                  kind: Infer,
+                ),
               )),
             ),
           ],
