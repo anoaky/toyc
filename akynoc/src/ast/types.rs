@@ -1,5 +1,8 @@
 //! Constructs for encoding types.
-use std::fmt::Display;
+use std::{
+    fmt::Display,
+    hash::{Hash, Hasher},
+};
 
 use internment::Intern;
 use serde::Serialize;
@@ -23,7 +26,7 @@ pub enum Primitive {
 ///
 /// Since all [`TyKind`] are interned, two different [`Items`](super::Item) with equivalent type
 /// will have the exact same [`TyKind`].
-#[derive(Debug, Clone, Copy, Eq, Serialize, Hash)]
+#[derive(Debug, Clone, Copy, Eq, Serialize)]
 pub enum TyKind {
     Primitive(Primitive),
     Void,
@@ -34,7 +37,7 @@ pub enum TyKind {
 }
 
 /// Encodes a single type.
-#[derive(Debug, Clone, Copy, Eq, Serialize, Hash)]
+#[derive(Debug, Clone, Copy, Eq, Serialize)]
 pub struct Ty {
     pub id: NodeId,
     pub kind: Intern<TyKind>,
@@ -88,12 +91,12 @@ use std::io::Write;
 
 impl Display for TyKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &Self::Primitive(p) => write!(f, "{p}"),
-            &Self::Void => write!(f, "void"),
-            &Self::Struct(id) => write!(f, "struct {id}"),
-            &Self::Pointer(ty) => write!(f, "(&{})", ty),
-            &Self::Array(size, ty) => {
+        match *self {
+            Self::Primitive(p) => write!(f, "{p}"),
+            Self::Void => write!(f, "void"),
+            Self::Struct(id) => write!(f, "struct {id}"),
+            Self::Pointer(ty) => write!(f, "(&{})", ty),
+            Self::Array(size, ty) => {
                 let mut out = vec![];
                 write!(&mut out, "{}", ty).unwrap();
                 let inner_type = String::from_utf8(out).unwrap();
@@ -106,7 +109,7 @@ impl Display for TyKind {
                     }
                 }
             }
-            &Self::Infer => write!(f, "_"),
+            Self::Infer => write!(f, "_"),
         }
     }
 }
@@ -130,5 +133,30 @@ impl From<String> for Ident {
         Self {
             name: Intern::new(value),
         }
+    }
+}
+
+impl Hash for TyKind {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match *self {
+            Self::Primitive(p) => p.hash(state),
+            Self::Void => "void".hash(state),
+            Self::Struct(ident) => ident.hash(state),
+            Self::Pointer(ty) => {
+                "*".hash(state);
+                ty.hash(state);
+            }
+            Self::Array(size, ty) => {
+                size.hash(state);
+                ty.hash(state);
+            }
+            Self::Infer => "infer".hash(state),
+        }
+    }
+}
+
+impl Hash for Ty {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.kind.hash(state);
     }
 }
