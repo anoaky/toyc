@@ -43,6 +43,7 @@ pub enum Operator {
 #[derive(Debug, Clone, Serialize)]
 pub enum ExprKind {
     Literal(Literal),
+    Let(Pattern, Box<Expr>),
     Block(Vec<Expr>),
     Pattern(Pattern),
     Fn(FnSig, Box<Expr>),
