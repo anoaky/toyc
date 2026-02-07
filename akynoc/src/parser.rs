@@ -9,7 +9,7 @@ use chumsky::{
 use crate::{
     ast::{
         exprs::{Expr, ExprKind, Literal},
-        patterns::PatternKind,
+        patterns::{Ident, Pattern, PatternKind},
     },
     lexer::{lex, SourceFile, Token},
 };
@@ -25,13 +25,26 @@ pub fn parser<'tok, 'src: 'tok, I>() -> impl Parser<'tok, I, Vec<Expr>, Err<Rich
 where
     I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
 {
-    let pattern = select! {
-        Token::Identifier(s) => ExprKind::Pattern(PatternKind::Single(s.into()).into()).into(),
+    let ident = select! {
+        Token::Identifier(s) => s.into(),
     };
+    let ident_pattern = ident.clone().map(|id| PatternKind::Single(id).into());
+    let pattern = choice((
+        ident_pattern.clone(),
+        ident
+            .clone()
+            .separated_by(just(Token::Comma))
+            .collect::<Vec<Ident>>()
+            .delimited_by(just(Token::LPar), just(Token::RPar))
+            .map(|ids| PatternKind::Tuple(ids).into()),
+    ));
+    let pattern_expr = pattern.clone().map(|pat| ExprKind::Pattern(pat).into());
     let literal = select! {
         Token::IntLiteral(i) => Literal::Int(i.parse::<u32>().unwrap()).into()
     };
-    choice((pattern, literal)).repeated().collect::<Vec<Expr>>()
+    choice((pattern_expr, literal))
+        .repeated()
+        .collect::<Vec<Expr>>()
 }
 
 pub fn print_errors<'tok, 'src: 'tok>(
