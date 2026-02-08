@@ -19,6 +19,7 @@ pub enum TyKind {
     Pointer(Ty),
     Array(usize, Ty),
     Tuple(Vec<Ty>),
+    Fn(Vec<Ty>, Ty),
     Infer,
 }
 
@@ -41,6 +42,9 @@ impl PartialEq for TyKind {
                 } else {
                     t1.iter().zip(t2).all(|(t1, t2)| *t1 == *t2)
                 }
+            }
+            (Self::Fn(p1, r1), Self::Fn(p2, r2)) => {
+                Self::Tuple(p1.clone()) == Self::Tuple(p2.clone()) && *r1 == *r2
             }
             _ => false,
         }
@@ -68,6 +72,10 @@ impl Hash for TyKind {
             }
             Self::Tuple(tys) => {
                 tys.hash(state);
+            }
+            Self::Fn(params, ret) => {
+                params.hash(state);
+                ret.hash(state);
             }
             Self::Infer => "infer".hash(state),
         }
@@ -117,6 +125,9 @@ impl Display for TyKind {
                     delim = ", ";
                 }
                 write!(f, ")")
+            }
+            Self::Fn(params, ret) => {
+                write!(f, "{} -> {}", Self::Tuple(params.clone()), ret)
             }
             Self::Infer => write!(f, "_"),
         }
