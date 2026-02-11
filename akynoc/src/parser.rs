@@ -159,3 +159,54 @@ pub fn print_errors<'tok, 'src: 'tok>(
             .unwrap();
     }
 }
+
+#[cfg(test)]
+pub mod test {
+    use std::io::Write;
+
+    use anyhow::{bail, Result};
+    use ariadne::FileCache;
+    use chumsky::Parser;
+    use rstest::{fixture, rstest};
+    use tempfile::NamedTempFile;
+
+    use crate::{ast::exprs::Expr, lexer::SourceFile};
+
+    #[fixture]
+    fn cache() -> FileCache {
+        FileCache::default()
+    }
+
+    fn src(s: String, cache: FileCache) -> Result<SourceFile> {
+        let mut f = NamedTempFile::new()?;
+        write!(f, "{}", s)?;
+        Ok(SourceFile::from_path(f.path(), cache))
+    }
+
+    fn ast_to_string(ast: Vec<Expr>) -> String {
+        ast.iter()
+            .map(Expr::to_string)
+            .collect::<Vec<String>>()
+            .join("\n")
+    }
+
+    #[rstest]
+    #[case::int("23", "23")]
+    #[case::char("'a'", "'a'")]
+    fn test_literal(
+        #[case] input: String,
+        #[case] expected: String,
+        cache: FileCache,
+    ) -> Result<()> {
+        let src_file = src(input, cache)?;
+        let tokens = super::token_stream(&src_file);
+        match super::parser().parse(tokens).into_result() {
+            Ok(ast) => assert_eq!(ast_to_string(ast), expected),
+            Err(errs) => {
+                super::print_errors(&src_file.source, errs);
+                bail!("Parsing error");
+            }
+        }
+        Ok(())
+    }
+}
