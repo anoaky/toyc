@@ -8,7 +8,7 @@ use chumsky::{
 
 use crate::{
     ast::{
-        exprs::{Expr, ExprKind, Literal},
+        exprs::{Expr, ExprKind, FnParam, Literal},
         patterns::{Ident, PatternKind},
         types::{Primitive, TyKind},
     },
@@ -52,35 +52,40 @@ where
             choice((base_type, ptr_type, tuple_type, fn_type))
         });
 
-        let pattern = recursive(|pattern| {
-            let ident = select! {
-                Token::Identifier(s) => s.into(),
-            };
-            let ident_pattern = ident.clone().map(|id| PatternKind::Single(id).into());
-            let typed_pattern = pattern
-                .clone()
-                .memoized()
-                .then_ignore(just(Token::Colon))
-                .then(typ.clone())
-                .map(|(pat, ty)| PatternKind::TypedPattern(pat, ty).into());
+        let ident = select! {
+            Token::Identifier(s) => s.into(),
+        };
+        let ident_pattern = ident.clone().map(|id| PatternKind::Single(id).into());
 
-            choice((
-                ident_pattern.clone(),
-                ident
-                    .clone()
-                    .separated_by(just(Token::Comma))
-                    .collect::<Vec<Ident>>()
-                    .delimited_by(just(Token::LPar), just(Token::RPar))
-                    .map(|ids| PatternKind::Tuple(ids).into()),
-                typed_pattern,
-            ))
-        });
+        let pattern = choice((
+            ident_pattern.clone(),
+            ident
+                .clone()
+                .separated_by(just(Token::Comma))
+                .collect::<Vec<Ident>>()
+                .delimited_by(just(Token::LPar), just(Token::RPar))
+                .map(|ids| PatternKind::Tuple(ids).into()),
+        ));
         let pattern_expr = pattern.clone().map(|pat| ExprKind::Pattern(pat).into());
         let literal = select! {
             Token::IntLiteral(i) => Literal::Int(i.parse::<u32>().unwrap()).into()
         };
 
-        choice((pattern_expr, literal))
+        let let_expr = just(Token::Let)
+            .ignore_then(pattern.clone())
+            .then_ignore(just(Token::Assign))
+            .then(expr.clone().memoized())
+            .map(|(pat, expr)| ExprKind::Let(pat, Box::new(expr)).into());
+
+        let fn_params = ident
+            .clone()
+            .then_ignore(just(Token::Colon))
+            .then(typ.clone())
+            .map(|(name, ty)| FnParam { name, ty })
+            .separated_by(just(Token::Comma))
+            .collect::<Vec<_>>();
+
+        choice((pattern_expr, literal, let_expr))
     })
     .repeated()
     .collect::<Vec<Expr>>()

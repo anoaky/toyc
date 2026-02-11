@@ -18,15 +18,15 @@ pub enum Literal {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct FnParam {
-    name: Ident,
-    ty: Ty,
+    pub name: Ident,
+    pub ty: Ty,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct FnSig {
-    name: Ident,
-    params: Vec<FnParam>,
-    ty: Ty,
+    pub name: Ident,
+    pub params: Vec<FnParam>,
+    pub ty: Ty,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
