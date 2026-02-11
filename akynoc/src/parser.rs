@@ -68,7 +68,8 @@ where
         ));
         let pattern_expr = pattern.clone().map(|pat| ExprKind::Pattern(pat).into());
         let literal = select! {
-            Token::IntLiteral(i) => Literal::Int(i.parse::<u32>().unwrap()).into()
+            Token::IntLiteral(i) => Literal::Int(i.parse::<u32>().unwrap()).into(),
+            Token::CharLiteral(c) => any::<&str,Err<chumsky::error::EmptyErr>>().parse(c).into_result().unwrap().into(),
         };
 
         let let_expr = just(Token::Let)
