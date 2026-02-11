@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use internment::Intern;
 use serde::Serialize;
 
@@ -62,6 +64,25 @@ pub struct Expr {
     pub ty: Ty,
 }
 
+impl Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.kind {
+            ExprKind::Literal(l) => write!(f, "{}", l),
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl Display for Literal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Int(i) => write!(f, "{}", i),
+            Self::Char(c) => write!(f, "'{}'", c),
+            Self::String(s) => write!(f, "\"{}\"", s),
+        }
+    }
+}
+
 impl From<ExprKind> for Expr {
     fn from(value: ExprKind) -> Self {
         Self {
@@ -75,5 +96,11 @@ impl From<ExprKind> for Expr {
 impl From<Literal> for Expr {
     fn from(value: Literal) -> Self {
         ExprKind::Literal(value).into()
+    }
+}
+
+impl From<char> for Expr {
+    fn from(value: char) -> Self {
+        ExprKind::Literal(Literal::Char(value)).into()
     }
 }
