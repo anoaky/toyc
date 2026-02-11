@@ -3,7 +3,7 @@ use std::{fmt::Display, hash::Hash};
 use internment::Intern;
 use serde::Serialize;
 
-use crate::util::NodeId;
+use crate::{ast::types::Ty, util::NodeId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
 pub struct Ident {
@@ -20,9 +20,10 @@ impl Display for Ident {
 pub enum PatternKind {
     Single(Ident),
     Tuple(Vec<Ident>),
+    TypedPattern(Pattern, Ty),
 }
 
-#[derive(Debug, Clone, Eq, Serialize)]
+#[derive(Debug, Clone, Eq, Serialize, Hash)]
 pub struct Pattern {
     pub id: NodeId,
     pub kind: Intern<PatternKind>,
@@ -35,6 +36,7 @@ impl PartialEq for PatternKind {
             (Self::Tuple(v1), Self::Tuple(v2)) => {
                 v1.len() == v2.len() && v1.iter().zip(v2).all(|(id1, id2)| *id1 == *id2)
             }
+            (Self::TypedPattern(p1, t1), Self::TypedPattern(p2, t2)) => *p1 == *p2 && *t1 == *t2,
             _ => false,
         }
     }
@@ -45,6 +47,10 @@ impl Hash for PatternKind {
         match self {
             Self::Single(id) => id.hash(state),
             Self::Tuple(v) => v.hash(state),
+            Self::TypedPattern(pat, ty) => {
+                pat.hash(state);
+                ty.hash(state);
+            }
         }
     }
 }
