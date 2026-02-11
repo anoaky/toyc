@@ -9,7 +9,8 @@ use chumsky::{
 use crate::{
     ast::{
         exprs::{Expr, ExprKind, Literal},
-        patterns::{Ident, Pattern, PatternKind},
+        patterns::{Ident, PatternKind},
+        types::{Primitive, TyKind},
     },
     lexer::{lex, SourceFile, Token},
 };
@@ -26,19 +27,54 @@ where
     I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
 {
     recursive(|expr| {
-        let ident = select! {
-            Token::Identifier(s) => s.into(),
-        };
-        let ident_pattern = ident.clone().map(|id| PatternKind::Single(id).into());
-        let pattern = choice((
-            ident_pattern.clone(),
-            ident
+        let typ = recursive(|typ| {
+            let base_type = select! {
+                Token::Int => TyKind::Primitive(Primitive::Int).into(),
+                Token::Char => TyKind::Primitive(Primitive::Char).into(),
+            };
+            let ptr_type = just(Token::And)
+                .ignore_then(typ.clone().memoized())
+                .map(|inner_ty| TyKind::Pointer(inner_ty).into());
+            let comma_sep_types = typ
                 .clone()
+                .memoized()
                 .separated_by(just(Token::Comma))
-                .collect::<Vec<Ident>>()
-                .delimited_by(just(Token::LPar), just(Token::RPar))
-                .map(|ids| PatternKind::Tuple(ids).into()),
-        ));
+                .collect::<Vec<_>>()
+                .delimited_by(just(Token::LPar), just(Token::RPar));
+            let tuple_type = comma_sep_types
+                .clone()
+                .map(|types| TyKind::Tuple(types).into());
+            let fn_type = comma_sep_types
+                .clone()
+                .then_ignore(just(Token::FatArrow))
+                .then(typ.clone().memoized())
+                .map(|(params, ret)| TyKind::Fn(params, ret).into());
+            choice((base_type, ptr_type, tuple_type, fn_type))
+        });
+
+        let pattern = recursive(|pattern| {
+            let ident = select! {
+                Token::Identifier(s) => s.into(),
+            };
+            let ident_pattern = ident.clone().map(|id| PatternKind::Single(id).into());
+            let typed_pattern = pattern
+                .clone()
+                .memoized()
+                .then_ignore(just(Token::Colon))
+                .then(typ.clone())
+                .map(|(pat, ty)| PatternKind::TypedPattern(pat, ty).into());
+
+            choice((
+                ident_pattern.clone(),
+                ident
+                    .clone()
+                    .separated_by(just(Token::Comma))
+                    .collect::<Vec<Ident>>()
+                    .delimited_by(just(Token::LPar), just(Token::RPar))
+                    .map(|ids| PatternKind::Tuple(ids).into()),
+                typed_pattern,
+            ))
+        });
         let pattern_expr = pattern.clone().map(|pat| ExprKind::Pattern(pat).into());
         let literal = select! {
             Token::IntLiteral(i) => Literal::Int(i.parse::<u32>().unwrap()).into()
