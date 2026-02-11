@@ -8,7 +8,7 @@ use chumsky::{
 
 use crate::{
     ast::{
-        exprs::{Expr, ExprKind, FnParam, Literal},
+        exprs::{Expr, ExprKind, FnParam, FnSig, Literal},
         patterns::{Ident, PatternKind},
         types::{Primitive, TyKind},
     },
@@ -78,6 +78,14 @@ where
             .then(expr.clone().memoized())
             .map(|(pat, expr)| ExprKind::Let(pat, Box::new(expr)).into());
 
+        let block_expr = expr
+            .clone()
+            .memoized()
+            .separated_by(just(Token::Semi))
+            .collect::<Vec<_>>()
+            .delimited_by(just(Token::LBrace), just(Token::RBrace))
+            .map(|exprs| ExprKind::Block(exprs).into());
+
         let fn_params = ident
             .clone()
             .then_ignore(just(Token::Colon))
@@ -86,7 +94,46 @@ where
             .separated_by(just(Token::Comma))
             .collect::<Vec<_>>();
 
-        choice((pattern_expr, literal, let_expr))
+        let fn_sig = just(Token::Fn)
+            .ignore_then(ident.clone())
+            .then(
+                fn_params
+                    .clone()
+                    .delimited_by(just(Token::LPar), just(Token::RPar)),
+            )
+            .then(just(Token::Colon).ignore_then(typ.clone()).or_not())
+            .map(|((name, params), ty)| {
+                if let Some(ty) = ty {
+                    FnSig { name, params, ty }
+                } else {
+                    FnSig {
+                        name,
+                        params,
+                        ty: TyKind::Infer.into(),
+                    }
+                }
+            });
+
+        let inline_fn = fn_sig
+            .clone()
+            .then_ignore(just(Token::FatArrow))
+            .then_ignore(just(Token::LBrace).not())
+            .then(expr.clone().memoized())
+            .map(|(sig, expr)| ExprKind::Fn(sig, Box::new(expr)).into());
+
+        let block_fn = fn_sig
+            .clone()
+            .then(block_expr.clone())
+            .map(|(sig, block)| ExprKind::Fn(sig, Box::new(block)).into());
+
+        choice((
+            pattern_expr,
+            literal,
+            let_expr,
+            block_expr,
+            inline_fn,
+            block_fn,
+        ))
     })
     .repeated()
     .collect::<Vec<Expr>>()
