@@ -2748,12 +2748,13 @@ var hljs = (function () {
 if (typeof exports === "object" && typeof module !== "undefined") {
   module.exports = hljs;
 }
-/*! `rust` grammar compiled for Highlight.js 11.11.1 */
 (function () {
   var hljsGrammar = (function () {
     "use strict";
 
     function akyno(hljs) {
+      const AKN_IDENT_RE = /[a-zA-Z_][a-zA-Z0-9_]*/;
+      const AKN_TYPE_RE = /(&*(?:int|char))/;
       return {
         name: "Akyno",
         aliases: ["akn"],
@@ -2765,6 +2766,32 @@ if (typeof exports === "object" && typeof module !== "undefined") {
           hljs.C_LINE_COMMENT_MODE,
           hljs.C_BLOCK_COMMENT_MODE,
           hljs.QUOTE_STRING_MODE,
+          hljs.NUMBER_MODE,
+          {
+            scope: "string",
+            begin: /'/,
+            end: /'/,
+            contains: [
+              {
+                scope: "char.escape",
+                match: /\\('|n|t|r|x\w{2})/,
+              },
+            ],
+          },
+          {
+            begin: [/let/, /\s+/, AKN_IDENT_RE],
+            className: {
+              1: "keyword",
+              3: "variable",
+            },
+          },
+          {
+            begin: [/fn/, /\s+/, AKN_IDENT_RE],
+            className: {
+              1: "keyword",
+              3: "title.function",
+            },
+          },
         ],
       };
     }
@@ -2774,6 +2801,8 @@ if (typeof exports === "object" && typeof module !== "undefined") {
 
   hljs.registerLanguage("akyno", hljsGrammar);
 })();
+
+/*! `rust` grammar compiled for Highlight.js 11.11.1 */
 (function () {
   var hljsGrammar = (function () {
     "use strict";
