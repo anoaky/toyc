@@ -1,10 +1,10 @@
 #![doc = include_str!("../README.md")]
 use std::path::PathBuf;
 
-use akynoc::lexer::{self, lex, SourceFile};
+use akynoc::lexer::{self, SourceFile, lex};
 use anyhow::Result;
 use ariadne::FileCache;
-use clap::{builder::PossibleValue, Parser, ValueEnum};
+use clap::{Parser, ValueEnum, builder::PossibleValue};
 
 #[derive(Debug, Clone, Copy)]
 enum Pass {

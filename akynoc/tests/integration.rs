@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-use akynoc::lexer::{lex, SourceFile, Token};
+use akynoc::lexer::{SourceFile, Token, lex};
 use anyhow::Result;
 use ariadne::FileCache;
 use insta::assert_ron_snapshot;
