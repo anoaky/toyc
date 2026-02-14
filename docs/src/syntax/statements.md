@@ -1,7 +1,7 @@
 # Statements
 
 There are five kinds of statements: `if` statements, `while` loops, blocks, `let` statements, and expression statements. 
-All statements have a value, like [expressions](./expressions.md), but the two are not interchangeable: all expressions are statements, but not vice versa.
+Statements are a subset of [expressions](./expressions.md) that are typically used for their side-effects, rather than as values. They do, however, have value.
 
 ## If Statements
 
