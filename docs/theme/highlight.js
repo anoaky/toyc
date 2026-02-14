@@ -2792,6 +2792,12 @@ if (typeof exports === "object" && typeof module !== "undefined") {
               3: "title.function",
             },
           },
+          {
+            begin: [AKN_IDENT_RE, /\(/, /.*/, /\)/],
+            className: {
+              1: "title.function.invoke"
+            }
+          },
         ],
       };
     }
