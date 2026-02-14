@@ -86,6 +86,11 @@ where
             .delimited_by(just(Token::LBrace), just(Token::RBrace))
             .map(|exprs| ExprKind::Block(exprs).into());
 
+        let if_expr = just(Token::If).ignore_then(expr.clone().memoized()).delimited_by(just(Token::LPar), just(Token::RPar)).then(expr.clone().memoized()).then(just(Token::Else).ignore_then(expr.clone().memoized()).or_not())
+            .map(|((expr, then), els)| if let Some(els) = els {ExprKind::If(Box::new(expr), Box::new(then), Some(Box::new(els))).into()} else {
+                ExprKind::If(Box::new(expr), Box::new(then), None).into()
+            });
+
         let fn_params = ident
             .clone()
             .then_ignore(just(Token::Colon))
@@ -131,6 +136,7 @@ where
             literal,
             let_expr,
             block_expr,
+            if_expr,
             inline_fn,
             block_fn,
         ))
