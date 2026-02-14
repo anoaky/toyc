@@ -15,9 +15,7 @@ use crate::{
     lexer::{lex, SourceFile, Token},
 };
 
-pub fn token_stream<'tok, 'src: 'tok>(
-    src: &'src SourceFile,
-) -> impl ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>> {
+pub fn token_stream<'tok, 'src: 'tok>(src: &'src SourceFile) -> impl ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>> {
     let token_iter = lex(src);
     Stream::from_iter(token_iter).map((0..src.source.len()).into(), |(t, s)| (t, s))
 }
@@ -41,9 +39,7 @@ where
                 .separated_by(just(Token::Comma))
                 .collect::<Vec<_>>()
                 .delimited_by(just(Token::LPar), just(Token::RPar));
-            let tuple_type = comma_sep_types
-                .clone()
-                .map(|types| TyKind::Tuple(types).into());
+            let tuple_type = comma_sep_types.clone().map(|types| TyKind::Tuple(types).into());
             let fn_type = comma_sep_types
                 .clone()
                 .then_ignore(just(Token::FatArrow))
@@ -86,10 +82,22 @@ where
             .delimited_by(just(Token::LBrace), just(Token::RBrace))
             .map(|exprs| ExprKind::Block(exprs).into());
 
-        let if_expr = just(Token::If).ignore_then(expr.clone().memoized()).delimited_by(just(Token::LPar), just(Token::RPar)).then(expr.clone().memoized()).then(just(Token::Else).ignore_then(expr.clone().memoized()).or_not())
-            .map(|((expr, then), els)| if let Some(els) = els {ExprKind::If(Box::new(expr), Box::new(then), Some(Box::new(els))).into()} else {
-                ExprKind::If(Box::new(expr), Box::new(then), None).into()
+        let if_expr = just(Token::If)
+            .ignore_then(expr.clone().memoized().delimited_by(just(Token::LPar), just(Token::RPar)))
+            .then(expr.clone().memoized())
+            .then(just(Token::Else).ignore_then(expr.clone().memoized()).or_not())
+            .map(|((exp, then), els)| {
+                if let Some(els) = els {
+                    ExprKind::If(Box::new(exp), Box::new(then), Some(Box::new(els))).into()
+                } else {
+                    ExprKind::If(Box::new(exp), Box::new(then), None).into()
+                }
             });
+
+        let while_expr = just(Token::While)
+            .ignore_then(expr.clone().memoized().delimited_by(just(Token::LPar), just(Token::RPar)))
+            .then(expr.clone().memoized())
+            .map(|(exp, lp)| ExprKind::While(Box::new(exp), Box::new(lp)).into());
 
         let fn_params = ident
             .clone()
@@ -101,11 +109,7 @@ where
 
         let fn_sig = just(Token::Fn)
             .ignore_then(ident.clone())
-            .then(
-                fn_params
-                    .clone()
-                    .delimited_by(just(Token::LPar), just(Token::RPar)),
-            )
+            .then(fn_params.clone().delimited_by(just(Token::LPar), just(Token::RPar)))
             .then(just(Token::Colon).ignore_then(typ.clone()).or_not())
             .map(|((name, params), ty)| {
                 if let Some(ty) = ty {
@@ -131,24 +135,13 @@ where
             .then(block_expr.clone())
             .map(|(sig, block)| ExprKind::Fn(sig, Box::new(block)).into());
 
-        choice((
-            pattern_expr,
-            literal,
-            let_expr,
-            block_expr,
-            if_expr,
-            inline_fn,
-            block_fn,
-        ))
+        choice((pattern_expr, literal, let_expr, block_expr, if_expr, while_expr, inline_fn, block_fn))
     })
     .repeated()
     .collect::<Vec<Expr>>()
 }
 
-pub fn print_errors<'tok, 'src: 'tok>(
-    source: &ariadne::Source,
-    errs: Vec<Rich<'tok, Token<'src>>>,
-) {
+pub fn print_errors<'tok, 'src: 'tok>(source: &ariadne::Source, errs: Vec<Rich<'tok, Token<'src>>>) {
     for err in errs {
         let reason = err.reason().clone().map_token(|t| t.to_string());
         ariadne::Report::build(ariadne::ReportKind::Error, ((), err.span().into_range()))
@@ -190,20 +183,13 @@ pub mod test {
     }
 
     fn ast_to_string(ast: Vec<Expr>) -> String {
-        ast.iter()
-            .map(Expr::to_string)
-            .collect::<Vec<String>>()
-            .join("\n")
+        ast.iter().map(Expr::to_string).collect::<Vec<String>>().join("\n")
     }
 
     #[rstest]
     #[case::int("23", "23")]
     #[case::char("'a'", "'a'")]
-    fn test_literal(
-        #[case] input: String,
-        #[case] expected: String,
-        cache: FileCache,
-    ) -> Result<()> {
+    fn test_literal(#[case] input: String, #[case] expected: String, cache: FileCache) -> Result<()> {
         let src_file = src(input, cache)?;
         let tokens = super::token_stream(&src_file);
         match super::parser().parse(tokens).into_result() {
