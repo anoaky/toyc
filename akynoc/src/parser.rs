@@ -68,6 +68,14 @@ where
             Token::CharLiteral(c) => any::<&str,Err<chumsky::error::EmptyErr>>().parse(c).into_result().unwrap().into(),
         };
 
+        let tuple_expr = expr
+            .clone()
+            .memoized()
+            .separated_by(just(Token::Comma))
+            .collect::<Vec<_>>()
+            .delimited_by(just(Token::LPar), just(Token::RPar))
+            .map(|exprs| ExprKind::Tuple(exprs).into());
+
         let let_expr = just(Token::Let)
             .ignore_then(pattern.clone())
             .then_ignore(just(Token::Assign))
@@ -135,7 +143,17 @@ where
             .then(block_expr.clone())
             .map(|(sig, block)| ExprKind::Fn(sig, Box::new(block)).into());
 
-        choice((pattern_expr, literal, let_expr, block_expr, if_expr, while_expr, inline_fn, block_fn))
+        choice((
+            pattern_expr,
+            tuple_expr,
+            literal,
+            let_expr,
+            block_expr,
+            if_expr,
+            while_expr,
+            inline_fn,
+            block_fn,
+        ))
     })
     .repeated()
     .collect::<Vec<Expr>>()
@@ -212,6 +230,9 @@ pub mod test {
 
     #[rstest]
     #[case::simple_let("let x = 3", "let x = 3")]
+    #[case::let_literal_tuple("let (x, y) = (1, 2)", "let (x, y) = (1, 2)")]
+    #[case::let_ident_tuple("let (x, y) = (a, b)", "let (x, y) = (a, b)")]
+    #[case::let_mixed_tuple("let (x, y) = (a, 1)", "let (x, y) = (a, 1)")]
     fn test_statements(#[case] input: String, #[case] expected: String, cache: FileCache) -> Result<()> {
         let src_file = src(input, cache)?;
         match parse_to_string(&src_file) {
