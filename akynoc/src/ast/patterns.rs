@@ -28,13 +28,20 @@ pub struct Pattern {
     pub kind: Intern<PatternKind>,
 }
 
+impl Display for PatternKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Single(id) => write!(f, "{}", id),
+            Self::Tuple(ids) => write!(f, "({})", ids.iter().map(Ident::to_string).collect::<Vec<String>>().join(", ")),
+        }
+    }
+}
+
 impl PartialEq for PatternKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Single(id1), Self::Single(id2)) => *id1 == *id2,
-            (Self::Tuple(v1), Self::Tuple(v2)) => {
-                v1.len() == v2.len() && v1.iter().zip(v2).all(|(id1, id2)| *id1 == *id2)
-            }
+            (Self::Tuple(v1), Self::Tuple(v2)) => v1.len() == v2.len() && v1.iter().zip(v2).all(|(id1, id2)| *id1 == *id2),
             _ => false,
         }
     }
@@ -46,6 +53,12 @@ impl Hash for PatternKind {
             Self::Single(id) => id.hash(state),
             Self::Tuple(v) => v.hash(state),
         }
+    }
+}
+
+impl Display for Pattern {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.kind)
     }
 }
 
