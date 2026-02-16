@@ -69,6 +69,8 @@ impl Display for Expr {
         match &self.kind {
             ExprKind::Literal(l) => write!(f, "{}", l),
             ExprKind::Let(pat, expr) => write!(f, "let {} = {}", pat, *expr),
+            ExprKind::Block(exprs) => write!(f, "{{{}}}", exprs.iter().map(Expr::to_string).collect::<Vec<String>>().join("\n")),
+            ExprKind::Pattern(pat) => write!(f, "{}", pat),
             _ => unimplemented!(),
         }
     }
