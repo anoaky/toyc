@@ -180,32 +180,20 @@ impl SourceFile {
     }
 }
 
-pub fn lex<'src>(
-    src: &'src SourceFile,
-) -> impl std::iter::Iterator<Item = (Token<'src>, SimpleSpan)> {
-    Token::lexer(src.source.text())
-        .spanned()
-        .map(|(tok, span)| -> (Token<'src>, SimpleSpan) {
-            match tok {
-                Ok(t) => match t {
-                    Token::CharLiteral(c) => (
-                        Token::CharLiteral(c.strip_prefix("'").unwrap().strip_suffix("'").unwrap()),
-                        span.into(),
-                    ),
-                    Token::StrLiteral(s) => (
-                        Token::StrLiteral(
-                            s.strip_prefix("\"").unwrap().strip_suffix("\"").unwrap(),
-                        ),
-                        span.into(),
-                    ),
-                    t => (t, span.into()),
-                },
-                Err(()) => {
-                    let span = Into::<SimpleSpan>::into(span);
-                    (Token::Invalid, span)
-                }
+pub fn lex<'src>(src: &'src SourceFile) -> impl std::iter::Iterator<Item = (Token<'src>, SimpleSpan)> {
+    Token::lexer(src.source.text()).spanned().map(|(tok, span)| -> (Token<'src>, SimpleSpan) {
+        match tok {
+            Ok(t) => match t {
+                Token::CharLiteral(c) => (Token::CharLiteral(c.strip_prefix("'").unwrap().strip_suffix("'").unwrap()), span.into()),
+                Token::StrLiteral(s) => (Token::StrLiteral(s.strip_prefix("\"").unwrap().strip_suffix("\"").unwrap()), span.into()),
+                t => (t, span.into()),
+            },
+            Err(()) => {
+                let span = Into::<SimpleSpan>::into(span);
+                (Token::Invalid, span)
             }
-        })
+        }
+    })
 }
 
 pub fn print_errors<'src, I>(src: &'src SourceFile, token_iter: I)

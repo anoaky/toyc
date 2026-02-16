@@ -1,9 +1,8 @@
 use std::{fmt::Display, hash::Hash};
 
+use akyno_util::NodeId;
 use internment::Intern;
 use serde::Serialize;
-
-use crate::util::NodeId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
 pub struct Ident {

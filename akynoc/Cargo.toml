@@ -7,17 +7,19 @@ repository = "https://github.com/anoaky/akyno"
 description = "Akyno Compiler"
 
 [dependencies]
-anyhow = "1.0.100"
-ariadne = "0.6.0"
+akyno_ast = { workspace = true }
+akyno_util = { workspace = true }
+anyhow = { workspace = true }
+ariadne = { workspace = true }
 chumsky = { version = "0.12.0", features = ["bytes", "memoization", "pratt"] }
 clap = { version = "4.5.54", features = ["derive"] }
-internment = { version = "0.8.6", features = ["arena", "serde"] }
+internment = { workspace = true }
 logos = "0.16.0"
-ron = "0.12.0"
-serde = {version ="1.0.228", features=["derive", "rc"]}
+ron = { workspace = true }
+serde = { workspace = true }
 
 [dev-dependencies]
-insta = {version = "1.46.0", features = ["yaml", "glob", "ron", "redactions"]}
-rstest = "0.26.1"
-tempfile = "3.24.0"
+insta = { workspace = true }
+rstest = { workspace = true }
+tempfile = { workspace = true }
 

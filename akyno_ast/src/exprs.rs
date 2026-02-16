@@ -1,14 +1,12 @@
 use std::fmt::Display;
 
+use akyno_util::NodeId;
 use internment::Intern;
 use serde::Serialize;
 
 use crate::{
-    ast::{
-        patterns::{Ident, Pattern},
-        types::{Ty, TyKind},
-    },
-    util::NodeId,
+    patterns::{Ident, Pattern},
+    types::{Ty, TyKind},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]

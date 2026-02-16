@@ -1,3 +1,8 @@
+use akyno_ast::{
+    exprs::{Expr, ExprKind, FnParam, FnSig, Literal, Operator},
+    patterns::{Ident, PatternKind},
+    types::{Primitive, TyKind},
+};
 use chumsky::{
     extra::Err,
     input::{Input, Stream, ValueInput},
@@ -7,14 +12,7 @@ use chumsky::{
     Parser,
 };
 
-use crate::{
-    ast::{
-        exprs::{Expr, ExprKind, FnParam, FnSig, Literal, Operator},
-        patterns::{Ident, PatternKind},
-        types::{Primitive, TyKind},
-    },
-    lexer::{lex, SourceFile, Token},
-};
+use crate::lexer::{lex, SourceFile, Token};
 
 pub fn token_stream<'tok, 'src: 'tok>(src: &'src SourceFile) -> impl ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>> {
     let token_iter = lex(src);
@@ -28,18 +26,18 @@ where
     recursive(|expr| {
         let expr_memo = expr.memoized().boxed();
         let typ = recursive(|typ| {
+            let typ_memo = typ.memoized().boxed();
             let base_type = select! {
                 Token::Int => TyKind::Primitive(Primitive::Int).into(),
                 Token::Char => TyKind::Primitive(Primitive::Char).into(),
             }
             .boxed();
             let ptr_type = just(Token::And)
-                .ignore_then(typ.clone().memoized())
+                .ignore_then(typ_memo.clone())
                 .map(|inner_ty| TyKind::Pointer(inner_ty).into())
                 .boxed();
-            let comma_sep_types = typ
+            let comma_sep_types = typ_memo
                 .clone()
-                .memoized()
                 .separated_by(just(Token::Comma))
                 .collect::<Vec<_>>()
                 .delimited_by(just(Token::LPar), just(Token::RPar))
@@ -48,7 +46,7 @@ where
             let fn_type = comma_sep_types
                 .clone()
                 .then_ignore(just(Token::FatArrow))
-                .then(typ.clone().memoized())
+                .then(typ_memo.clone())
                 .map(|(params, ret)| TyKind::Fn(params, ret).into())
                 .boxed();
             choice((base_type, ptr_type, tuple_type, fn_type))
@@ -57,7 +55,8 @@ where
 
         let ident = select! {
             Token::Identifier(s) => s.into(),
-        };
+        }
+        .boxed();
         let ident_pattern = ident.clone().map(|id| PatternKind::Single(id).into()).boxed();
 
         let pattern = choice((
@@ -218,16 +217,14 @@ pub fn print_errors<'tok, 'src: 'tok>(source: &ariadne::Source, errs: Vec<Rich<'
 pub mod test {
     use std::io::Write;
 
+    use akyno_ast::exprs::Expr;
     use anyhow::{bail, Result};
     use ariadne::FileCache;
     use chumsky::{error::Rich, Parser};
     use rstest::{fixture, rstest};
     use tempfile::NamedTempFile;
 
-    use crate::{
-        ast::exprs::Expr,
-        lexer::{SourceFile, Token},
-    };
+    use crate::lexer::{SourceFile, Token};
 
     #[fixture]
     fn cache() -> FileCache {

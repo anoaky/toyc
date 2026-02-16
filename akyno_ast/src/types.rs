@@ -1,9 +1,8 @@
 use std::{fmt::Display, hash::Hash};
 
+use akyno_util::NodeId;
 use internment::Intern;
 use serde::Serialize;
-
-use crate::util::NodeId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
 pub enum Primitive {
@@ -39,9 +38,7 @@ impl PartialEq for TyKind {
                     t1.iter().zip(t2).all(|(t1, t2)| *t1 == *t2)
                 }
             }
-            (Self::Fn(p1, r1), Self::Fn(p2, r2)) => {
-                Self::Tuple(p1.clone()) == Self::Tuple(p2.clone()) && *r1 == *r2
-            }
+            (Self::Fn(p1, r1), Self::Fn(p2, r2)) => Self::Tuple(p1.clone()) == Self::Tuple(p2.clone()) && *r1 == *r2,
             _ => false,
         }
     }

@@ -1,0 +1,9 @@
+[package]
+name = "akyno_ast"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+akyno_util = { workspace = true }
+serde = { workspace = true }
+internment = { workspace = true }
