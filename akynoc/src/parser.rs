@@ -165,11 +165,14 @@ pub mod test {
 
     use anyhow::{bail, Result};
     use ariadne::FileCache;
-    use chumsky::Parser;
+    use chumsky::{error::Rich, Parser};
     use rstest::{fixture, rstest};
     use tempfile::NamedTempFile;
 
-    use crate::{ast::exprs::Expr, lexer::SourceFile};
+    use crate::{
+        ast::exprs::Expr,
+        lexer::{SourceFile, Token},
+    };
 
     #[fixture]
     fn cache() -> FileCache {
@@ -186,6 +189,11 @@ pub mod test {
         ast.iter().map(Expr::to_string).collect::<Vec<String>>().join("\n")
     }
 
+    fn parse_to_string<'tok, 'src: 'tok>(src_file: &'src SourceFile) -> Result<String, Vec<Rich<'tok, Token<'src>>>> {
+        let tokens = super::token_stream(src_file);
+        super::parser().parse(tokens).into_result().map(ast_to_string)
+    }
+
     #[rstest]
     #[case::int("23", "23")]
     #[case::char("'a'", "'a'")]
@@ -194,6 +202,20 @@ pub mod test {
         let tokens = super::token_stream(&src_file);
         match super::parser().parse(tokens).into_result() {
             Ok(ast) => assert_eq!(ast_to_string(ast), expected),
+            Err(errs) => {
+                super::print_errors(&src_file.source, errs);
+                bail!("Parsing error");
+            }
+        }
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::simple_let("let x = 3", "let x = 3")]
+    fn test_statements(#[case] input: String, #[case] expected: String, cache: FileCache) -> Result<()> {
+        let src_file = src(input, cache)?;
+        match parse_to_string(&src_file) {
+            Ok(recovered) => assert_eq!(recovered, expected),
             Err(errs) => {
                 super::print_errors(&src_file.source, errs);
                 bail!("Parsing error");
