@@ -8,7 +8,7 @@ use chumsky::{
 
 use crate::{
     ast::{
-        exprs::{Expr, ExprKind, FnParam, FnSig, Literal},
+        exprs::{Expr, ExprKind, FnParam, FnSig, Literal, Operator},
         patterns::{Ident, PatternKind},
         types::{Primitive, TyKind},
     },
@@ -143,6 +143,24 @@ where
             .then(block_expr.clone())
             .map(|(sig, block)| ExprKind::Fn(sig, Box::new(block)).into());
 
+        let pratt_expr = recursive(|pratt_expr| {
+            let atom = choice((
+                literal,
+                pattern_expr.clone(),
+                tuple_expr.clone(),
+                pratt_expr.clone().delimited_by(just(Token::LPar), just(Token::RPar)),
+            ));
+
+            atom.pratt((
+                infix(left(1), just(Token::LogOr), |lhs, _, rhs, _| {
+                    ExprKind::BinOp(Box::new(lhs), Operator::LogOr, Box::new(rhs)).into()
+                }),
+                infix(left(3), just(Token::LogAnd), |lhs, _, rhs, _| {
+                    ExprKind::BinOp(Box::new(lhs), Operator::LogAnd, Box::new(rhs)).into()
+                }),
+            ))
+        });
+
         choice((
             pattern_expr,
             tuple_expr,
@@ -153,6 +171,7 @@ where
             while_expr,
             inline_fn,
             block_fn,
+            pratt_expr,
         ))
     })
     .repeated()
