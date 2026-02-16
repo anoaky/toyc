@@ -1,6 +1,7 @@
 use chumsky::{
     extra::Err,
     input::{Input, Stream, ValueInput},
+    pratt::*,
     prelude::*,
     span::SimpleSpan,
     Parser,
@@ -25,33 +26,39 @@ where
     I: ValueInput<'tok, Span = SimpleSpan, Token = Token<'src>>,
 {
     recursive(|expr| {
+        let expr_memo = expr.memoized().boxed();
         let typ = recursive(|typ| {
             let base_type = select! {
                 Token::Int => TyKind::Primitive(Primitive::Int).into(),
                 Token::Char => TyKind::Primitive(Primitive::Char).into(),
-            };
+            }
+            .boxed();
             let ptr_type = just(Token::And)
                 .ignore_then(typ.clone().memoized())
-                .map(|inner_ty| TyKind::Pointer(inner_ty).into());
+                .map(|inner_ty| TyKind::Pointer(inner_ty).into())
+                .boxed();
             let comma_sep_types = typ
                 .clone()
                 .memoized()
                 .separated_by(just(Token::Comma))
                 .collect::<Vec<_>>()
-                .delimited_by(just(Token::LPar), just(Token::RPar));
-            let tuple_type = comma_sep_types.clone().map(|types| TyKind::Tuple(types).into());
+                .delimited_by(just(Token::LPar), just(Token::RPar))
+                .boxed();
+            let tuple_type = comma_sep_types.clone().map(|types| TyKind::Tuple(types).into()).boxed();
             let fn_type = comma_sep_types
                 .clone()
                 .then_ignore(just(Token::FatArrow))
                 .then(typ.clone().memoized())
-                .map(|(params, ret)| TyKind::Fn(params, ret).into());
+                .map(|(params, ret)| TyKind::Fn(params, ret).into())
+                .boxed();
             choice((base_type, ptr_type, tuple_type, fn_type))
-        });
+        })
+        .boxed();
 
         let ident = select! {
             Token::Identifier(s) => s.into(),
         };
-        let ident_pattern = ident.clone().map(|id| PatternKind::Single(id).into());
+        let ident_pattern = ident.clone().map(|id| PatternKind::Single(id).into()).boxed();
 
         let pattern = choice((
             ident_pattern.clone(),
@@ -61,51 +68,56 @@ where
                 .collect::<Vec<Ident>>()
                 .delimited_by(just(Token::LPar), just(Token::RPar))
                 .map(|ids| PatternKind::Tuple(ids).into()),
-        ));
-        let pattern_expr = pattern.clone().map(|pat| ExprKind::Pattern(pat).into());
+        ))
+        .boxed();
+        let pattern_expr = pattern.clone().map(|pat| ExprKind::Pattern(pat).into()).boxed();
         let literal = select! {
             Token::IntLiteral(i) => Literal::Int(i.parse::<u32>().unwrap()).into(),
             Token::CharLiteral(c) => any::<&str,Err<chumsky::error::EmptyErr>>().parse(c).into_result().unwrap().into(),
-        };
+        }
+        .boxed();
 
-        let tuple_expr = expr
+        let tuple_expr = expr_memo
             .clone()
-            .memoized()
             .separated_by(just(Token::Comma))
             .collect::<Vec<_>>()
             .delimited_by(just(Token::LPar), just(Token::RPar))
-            .map(|exprs| ExprKind::Tuple(exprs).into());
+            .map(|exprs| ExprKind::Tuple(exprs).into())
+            .boxed();
 
         let let_expr = just(Token::Let)
             .ignore_then(pattern.clone())
             .then_ignore(just(Token::Assign))
-            .then(expr.clone().memoized())
-            .map(|(pat, expr)| ExprKind::Let(pat, Box::new(expr)).into());
+            .then(expr_memo.clone())
+            .map(|(pat, expr)| ExprKind::Let(pat, Box::new(expr)).into())
+            .boxed();
 
-        let block_expr = expr
+        let block_expr = expr_memo
             .clone()
-            .memoized()
             .separated_by(just(Token::Semi))
             .collect::<Vec<_>>()
             .delimited_by(just(Token::LBrace), just(Token::RBrace))
-            .map(|exprs| ExprKind::Block(exprs).into());
+            .map(|exprs| ExprKind::Block(exprs).into())
+            .boxed();
 
         let if_expr = just(Token::If)
-            .ignore_then(expr.clone().memoized().delimited_by(just(Token::LPar), just(Token::RPar)))
-            .then(expr.clone().memoized())
-            .then(just(Token::Else).ignore_then(expr.clone().memoized()).or_not())
+            .ignore_then(expr_memo.clone().delimited_by(just(Token::LPar), just(Token::RPar)))
+            .then(expr_memo.clone())
+            .then(just(Token::Else).ignore_then(expr_memo.clone()).or_not())
             .map(|((exp, then), els)| {
                 if let Some(els) = els {
                     ExprKind::If(Box::new(exp), Box::new(then), Some(Box::new(els))).into()
                 } else {
                     ExprKind::If(Box::new(exp), Box::new(then), None).into()
                 }
-            });
+            })
+            .boxed();
 
         let while_expr = just(Token::While)
-            .ignore_then(expr.clone().memoized().delimited_by(just(Token::LPar), just(Token::RPar)))
-            .then(expr.clone().memoized())
-            .map(|(exp, lp)| ExprKind::While(Box::new(exp), Box::new(lp)).into());
+            .ignore_then(expr_memo.clone().delimited_by(just(Token::LPar), just(Token::RPar)).boxed())
+            .then(expr_memo.clone())
+            .map(|(exp, lp)| ExprKind::While(Box::new(exp), Box::new(lp)).into())
+            .boxed();
 
         let fn_params = ident
             .clone()
@@ -113,12 +125,14 @@ where
             .then(typ.clone())
             .map(|(name, ty)| FnParam { name, ty })
             .separated_by(just(Token::Comma))
-            .collect::<Vec<_>>();
+            .collect::<Vec<_>>()
+            .boxed();
 
         let fn_sig = just(Token::Fn)
             .ignore_then(ident.clone())
             .then(fn_params.clone().delimited_by(just(Token::LPar), just(Token::RPar)))
             .then(just(Token::Colon).ignore_then(typ.clone()).or_not())
+            .boxed()
             .map(|((name, params), ty)| {
                 if let Some(ty) = ty {
                     FnSig { name, params, ty }
@@ -129,23 +143,26 @@ where
                         ty: TyKind::Infer.into(),
                     }
                 }
-            });
+            })
+            .boxed();
 
         let inline_fn = fn_sig
             .clone()
             .then_ignore(just(Token::FatArrow))
             .then_ignore(just(Token::LBrace).not())
-            .then(expr.clone().memoized())
-            .map(|(sig, expr)| ExprKind::Fn(sig, Box::new(expr)).into());
+            .then(expr_memo.clone())
+            .map(|(sig, expr)| ExprKind::Fn(sig, Box::new(expr)).into())
+            .boxed();
 
         let block_fn = fn_sig
             .clone()
             .then(block_expr.clone())
-            .map(|(sig, block)| ExprKind::Fn(sig, Box::new(block)).into());
+            .map(|(sig, block)| ExprKind::Fn(sig, Box::new(block)).into())
+            .boxed();
 
         let pratt_expr = recursive(|pratt_expr| {
             let atom = choice((
-                literal,
+                literal.clone(),
                 pattern_expr.clone(),
                 tuple_expr.clone(),
                 pratt_expr.clone().delimited_by(just(Token::LPar), just(Token::RPar)),
@@ -159,7 +176,8 @@ where
                     ExprKind::BinOp(Box::new(lhs), Operator::LogAnd, Box::new(rhs)).into()
                 }),
             ))
-        });
+        })
+        .boxed();
 
         choice((
             pattern_expr,
