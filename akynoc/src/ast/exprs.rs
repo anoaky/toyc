@@ -48,6 +48,7 @@ pub enum ExprKind {
     Let(Pattern, Box<Expr>),
     Block(Vec<Expr>),
     Pattern(Pattern),
+    Tuple(Vec<Expr>),
     Fn(FnSig, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Option<Box<Expr>>),
     While(Box<Expr>, Box<Expr>),
@@ -71,6 +72,7 @@ impl Display for Expr {
             ExprKind::Let(pat, expr) => write!(f, "let {} = {}", pat, *expr),
             ExprKind::Block(exprs) => write!(f, "{{{}}}", exprs.iter().map(Expr::to_string).collect::<Vec<String>>().join("\n")),
             ExprKind::Pattern(pat) => write!(f, "{}", pat),
+            ExprKind::Tuple(exprs) => write!(f, "({})", exprs.iter().map(Expr::to_string).collect::<Vec<String>>().join(", ")),
             _ => unimplemented!(),
         }
     }
