@@ -109,3 +109,18 @@ impl From<char> for Expr {
         ExprKind::Literal(Literal::Char(value)).into()
     }
 }
+
+impl Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Self::Plus => "+",
+            Self::Minus => "-",
+            Self::Times => "*",
+            Self::Div => "/",
+            Self::Rem => "%",
+            Self::LogAnd => "&&",
+            Self::LogOr => "||",
+        };
+        write!(f, "{}", s)
+    }
+}
