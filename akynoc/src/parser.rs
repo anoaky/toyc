@@ -148,15 +148,7 @@ where
             })
             .boxed();
 
-        let inline_fn = fn_sig
-            .clone()
-            .then_ignore(just(Token::FatArrow))
-            .then_ignore(just(Token::LBrace).not())
-            .then(expr_memo.clone())
-            .map(|(sig, expr)| ExprKind::Fn(sig, Box::new(expr)).into())
-            .boxed();
-
-        let block_fn = fn_sig
+        let fn_defn = fn_sig
             .clone()
             .then(block_expr.clone())
             .map(|(sig, block)| ExprKind::Fn(sig, Box::new(block)).into())
@@ -189,8 +181,7 @@ where
             block_expr,
             if_expr,
             while_expr,
-            inline_fn,
-            block_fn,
+            fn_defn,
             pratt_expr,
         ))
     })
