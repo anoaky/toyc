@@ -1,6 +1,6 @@
 use akyno_ast::{
     exprs::{Expr, ExprKind, FnParam, FnSig, Literal, Operator},
-    patterns::{Ident, PatternKind},
+    patterns::{Ident, Pattern, PatternKind},
     types::{Primitive, TyKind},
 };
 use chumsky::{
@@ -59,15 +59,18 @@ where
         .boxed();
         let ident_pattern = ident.clone().map(|id| PatternKind::Single(id).into()).boxed();
 
-        let pattern = choice((
-            ident_pattern.clone(),
-            ident
-                .clone()
-                .separated_by(just(Token::Comma))
-                .collect::<Vec<Ident>>()
-                .delimited_by(just(Token::LPar), just(Token::RPar))
-                .map(|ids| PatternKind::Tuple(ids).into()),
-        ))
+        let pattern = recursive(|pattern| {
+            choice((
+                ident_pattern.clone(),
+                pattern
+                    .clone()
+                    .separated_by(just(Token::Comma))
+                    .collect::<Vec<Pattern>>()
+                    .delimited_by(just(Token::LPar), just(Token::RPar))
+                    .map(|pats| PatternKind::Tuple(pats).into()),
+            ))
+            .boxed()
+        })
         .boxed();
         let pattern_expr = pattern.clone().map(|pat| ExprKind::Pattern(pat).into()).boxed();
         let literal = select! {

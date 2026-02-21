@@ -18,7 +18,7 @@ impl Display for Ident {
 #[derive(Debug, Clone, Eq, Serialize)]
 pub enum PatternKind {
     Single(Ident),
-    Tuple(Vec<Ident>),
+    Tuple(Vec<Pattern>),
 }
 
 #[derive(Debug, Clone, Eq, Serialize, Hash)]
@@ -31,7 +31,7 @@ impl Display for PatternKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Single(id) => write!(f, "{}", id),
-            Self::Tuple(ids) => write!(f, "({})", ids.iter().map(Ident::to_string).collect::<Vec<String>>().join(", ")),
+            Self::Tuple(ids) => write!(f, "({})", ids.iter().map(Pattern::to_string).collect::<Vec<String>>().join(", ")),
         }
     }
 }
