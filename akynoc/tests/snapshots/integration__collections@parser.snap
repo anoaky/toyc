@@ -115,7 +115,15 @@ snapshot_kind: text
                     kind: Ident(Ident(
                       name: "source",
                     )),
+                    ty: Ty(
+                      id: "[nodeid]",
+                      kind: Infer,
+                    ),
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
               )),
             ),
@@ -142,7 +150,15 @@ snapshot_kind: text
                     kind: Ident(Ident(
                       name: "destination",
                     )),
+                    ty: Ty(
+                      id: "[nodeid]",
+                      kind: Infer,
+                    ),
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
               )),
             ),
@@ -152,17 +168,25 @@ snapshot_kind: text
                 id: "[nodeid]",
                 kind: RangePattern(Ident(
                   name: "i",
-                ), InclusiveExclusive(Expr(
+                ), Expr(
                   id: "[nodeid]",
                   kind: Literal(Literal(
                     value: Int(0),
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 ), Expr(
                   id: "[nodeid]",
                   kind: Ident(Ident(
                     name: "bytes",
                   )),
-                ))),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
+                )),
               ), Stmt(
                 id: "[nodeid]",
                 kind: Block(Block(
@@ -178,12 +202,24 @@ snapshot_kind: text
                             kind: Ident(Ident(
                               name: "dst",
                             )),
+                            ty: Ty(
+                              id: "[nodeid]",
+                              kind: Infer,
+                            ),
                           ), Expr(
                             id: "[nodeid]",
                             kind: Ident(Ident(
                               name: "i",
                             )),
+                            ty: Ty(
+                              id: "[nodeid]",
+                              kind: Infer,
+                            ),
                           )),
+                          ty: Ty(
+                            id: "[nodeid]",
+                            kind: Infer,
+                          ),
                         ), Expr(
                           id: "[nodeid]",
                           kind: Index(Expr(
@@ -191,13 +227,29 @@ snapshot_kind: text
                             kind: Ident(Ident(
                               name: "src",
                             )),
+                            ty: Ty(
+                              id: "[nodeid]",
+                              kind: Infer,
+                            ),
                           ), Expr(
                             id: "[nodeid]",
                             kind: Ident(Ident(
                               name: "i",
                             )),
+                            ty: Ty(
+                              id: "[nodeid]",
+                              kind: Infer,
+                            ),
                           )),
+                          ty: Ty(
+                            id: "[nodeid]",
+                            kind: Infer,
+                          ),
                         )),
+                        ty: Ty(
+                          id: "[nodeid]",
+                          kind: Infer,
+                        ),
                       )),
                     ),
                   ],

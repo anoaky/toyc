@@ -103,6 +103,8 @@ pub enum Token<'a> {
     FatArrow,
     #[token("let")]
     Let,
+    #[token("fn")]
+    Fn,
     #[token(":=")]
     Define,
     Invalid,
@@ -156,6 +158,7 @@ impl<'a> Display for Token<'a> {
             Dot => write!(f, "."),
             FatArrow => write!(f, "=>"),
             Let => write!(f, "let"),
+            Fn => write!(f, "fn"),
             Define => write!(f, ":="),
             Invalid => write!(f, "INVALID"),
         }
@@ -177,52 +180,41 @@ impl SourceFile {
     }
 }
 
-pub fn lex<'src>(
-    src: &'src SourceFile,
-) -> impl std::iter::Iterator<Item = (Token<'src>, SimpleSpan)> {
-    Token::lexer(src.source.text())
-        .spanned()
-        .map(|(tok, span)| -> (Token<'src>, SimpleSpan) {
-            match tok {
-                Ok(t) => match t {
-                    Token::CharLiteral(c) => (
-                        Token::CharLiteral(c.strip_prefix("'").unwrap().strip_suffix("'").unwrap()),
-                        span.into(),
-                    ),
-                    Token::StrLiteral(s) => (
-                        Token::StrLiteral(
-                            s.strip_prefix("\"").unwrap().strip_suffix("\"").unwrap(),
-                        ),
-                        span.into(),
-                    ),
-                    t => (t, span.into()),
-                },
-                Err(()) => {
-                    let span = Into::<SimpleSpan>::into(span);
-                    (Token::Invalid, span)
-                }
+pub fn lex<'src>(src: &'src SourceFile) -> impl std::iter::Iterator<Item = (Token<'src>, SimpleSpan)> {
+    Token::lexer(src.source.text()).spanned().map(|(tok, span)| -> (Token<'src>, SimpleSpan) {
+        match tok {
+            Ok(t) => match t {
+                Token::CharLiteral(c) => (Token::CharLiteral(c.strip_prefix("'").unwrap().strip_suffix("'").unwrap()), span.into()),
+                Token::StrLiteral(s) => (Token::StrLiteral(s.strip_prefix("\"").unwrap().strip_suffix("\"").unwrap()), span.into()),
+                t => (t, span.into()),
+            },
+            Err(()) => {
+                let span = Into::<SimpleSpan>::into(span);
+                (Token::Invalid, span)
             }
-        })
+        }
+    })
 }
 
 pub fn print_errors<'src, I>(src: &'src SourceFile, token_iter: I)
 where
     I: std::iter::Iterator<Item = (Token<'src>, SimpleSpan)>,
 {
-    token_iter.for_each(|(tok, span)| match tok {
-        Token::Invalid => Report::build(ariadne::ReportKind::Error, (&src.name, span.into_range()))
-            .with_config(ariadne::Config::new().with_index_type(ariadne::IndexType::Byte))
-            .with_code(250)
-            .with_message("Lexing error")
-            .with_label(
-                ariadne::Label::new((&src.name, span.into_range()))
-                    .with_message("Unrecognized character")
-                    .with_color(ariadne::Color::Red),
-            )
-            .finish()
-            .eprint((&src.name, &src.source))
-            .unwrap(),
-        _ => (),
+    token_iter.for_each(|(tok, span)| {
+        if tok == Token::Invalid {
+            Report::build(ariadne::ReportKind::Error, (&src.name, span.into_range()))
+                .with_config(ariadne::Config::new().with_index_type(ariadne::IndexType::Byte))
+                .with_code(250)
+                .with_message("Lexing error")
+                .with_label(
+                    ariadne::Label::new((&src.name, span.into_range()))
+                        .with_message("Unrecognized character")
+                        .with_color(ariadne::Color::Red),
+                )
+                .finish()
+                .eprint((&src.name, &src.source))
+                .unwrap();
+        }
     });
 }
 

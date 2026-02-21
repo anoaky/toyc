@@ -64,7 +64,7 @@ snapshot_kind: text
   IntLiteral("0"),
   Semi,
   Identifier("bytes"),
-  RPar,
+  RBrack,
   RPar,
   LBrace,
   Identifier("dst"),

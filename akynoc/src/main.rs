@@ -1,13 +1,10 @@
 #![doc = include_str!("../README.md")]
 use std::path::PathBuf;
 
-use akynoc::{
-    lexer::{self, lex, SourceFile},
-    parser::{self, parser},
-};
+use akynoc::lexer::{self, SourceFile, lex};
 use anyhow::Result;
 use ariadne::FileCache;
-use clap::{builder::PossibleValue, Parser, ValueEnum};
+use clap::{Parser, ValueEnum, builder::PossibleValue};
 
 #[derive(Debug, Clone, Copy)]
 enum Pass {
@@ -38,18 +35,7 @@ pub fn main() -> Result<()> {
             let token_iter = lex(&src);
             lexer::print_errors(&src, token_iter);
         }
-        Pass::Parser => {
-            use chumsky::Parser;
-            let token_stream = parser::token_stream(&src);
-            let parser = parser();
-            match parser.parse(token_stream).into_result() {
-                Ok(_) => (),
-                Err(errs) => {
-                    parser::print_errors(&src.source, errs);
-                    panic!("Parsing failed");
-                }
-            }
-        }
+        Pass::Parser => unimplemented!(),
     }
     Ok(())
 }

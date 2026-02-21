@@ -41,12 +41,24 @@ snapshot_kind: text
                   kind: Ident(Ident(
                     name: "n",
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 ), Le, Expr(
                   id: "[nodeid]",
                   kind: Literal(Literal(
                     value: Int(1),
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
+                ty: Ty(
+                  id: "[nodeid]",
+                  kind: Infer,
+                ),
               ), Stmt(
                 id: "[nodeid]",
                 kind: Block(Block(
@@ -58,6 +70,10 @@ snapshot_kind: text
                         kind: Literal(Literal(
                           value: Int(1),
                         )),
+                        ty: Ty(
+                          id: "[nodeid]",
+                          kind: Infer,
+                        ),
                       )),
                     ),
                   ],
@@ -75,6 +91,10 @@ snapshot_kind: text
                           kind: Ident(Ident(
                             name: "n",
                           )),
+                          ty: Ty(
+                            id: "[nodeid]",
+                            kind: Infer,
+                          ),
                         ), Times, Expr(
                           id: "[nodeid]",
                           kind: CallFn(CallFn(
@@ -83,6 +103,10 @@ snapshot_kind: text
                               kind: Ident(Ident(
                                 name: "fact_rec",
                               )),
+                              ty: Ty(
+                                id: "[nodeid]",
+                                kind: Infer,
+                              ),
                             ),
                             args: [
                               Expr(
@@ -92,16 +116,36 @@ snapshot_kind: text
                                   kind: Ident(Ident(
                                     name: "n",
                                   )),
+                                  ty: Ty(
+                                    id: "[nodeid]",
+                                    kind: Infer,
+                                  ),
                                 ), Minus, Expr(
                                   id: "[nodeid]",
                                   kind: Literal(Literal(
                                     value: Int(1),
                                   )),
+                                  ty: Ty(
+                                    id: "[nodeid]",
+                                    kind: Infer,
+                                  ),
                                 )),
+                                ty: Ty(
+                                  id: "[nodeid]",
+                                  kind: Infer,
+                                ),
                               ),
                             ],
                           )),
+                          ty: Ty(
+                            id: "[nodeid]",
+                            kind: Infer,
+                          ),
                         )),
+                        ty: Ty(
+                          id: "[nodeid]",
+                          kind: Infer,
+                        ),
                       )),
                     ),
                   ],
@@ -156,6 +200,10 @@ snapshot_kind: text
                   kind: Literal(Literal(
                     value: Int(1),
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
               )),
             ),
@@ -165,17 +213,25 @@ snapshot_kind: text
                 id: "[nodeid]",
                 kind: RangePattern(Ident(
                   name: "i",
-                ), Inclusive(Expr(
+                ), Expr(
                   id: "[nodeid]",
                   kind: Literal(Literal(
                     value: Int(1),
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 ), Expr(
                   id: "[nodeid]",
                   kind: Ident(Ident(
                     name: "n",
                   )),
-                ))),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
+                )),
               ), Stmt(
                 id: "[nodeid]",
                 kind: Block(Block(
@@ -189,6 +245,10 @@ snapshot_kind: text
                           kind: Ident(Ident(
                             name: "x",
                           )),
+                          ty: Ty(
+                            id: "[nodeid]",
+                            kind: Infer,
+                          ),
                         ), Expr(
                           id: "[nodeid]",
                           kind: BinOp(Expr(
@@ -196,13 +256,29 @@ snapshot_kind: text
                             kind: Ident(Ident(
                               name: "x",
                             )),
+                            ty: Ty(
+                              id: "[nodeid]",
+                              kind: Infer,
+                            ),
                           ), Times, Expr(
                             id: "[nodeid]",
                             kind: Ident(Ident(
                               name: "i",
                             )),
+                            ty: Ty(
+                              id: "[nodeid]",
+                              kind: Infer,
+                            ),
                           )),
+                          ty: Ty(
+                            id: "[nodeid]",
+                            kind: Infer,
+                          ),
                         )),
+                        ty: Ty(
+                          id: "[nodeid]",
+                          kind: Infer,
+                        ),
                       )),
                     ),
                   ],
@@ -216,6 +292,10 @@ snapshot_kind: text
                 kind: Ident(Ident(
                   name: "x",
                 )),
+                ty: Ty(
+                  id: "[nodeid]",
+                  kind: Infer,
+                ),
               )),
             ),
           ],
@@ -256,6 +336,10 @@ snapshot_kind: text
                   kind: Literal(Literal(
                     value: Int(3),
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
               )),
             ),
@@ -277,6 +361,10 @@ snapshot_kind: text
                       kind: Ident(Ident(
                         name: "fact_rec",
                       )),
+                      ty: Ty(
+                        id: "[nodeid]",
+                        kind: Infer,
+                      ),
                     ),
                     args: [
                       Expr(
@@ -284,9 +372,17 @@ snapshot_kind: text
                         kind: Ident(Ident(
                           name: "x",
                         )),
+                        ty: Ty(
+                          id: "[nodeid]",
+                          kind: Infer,
+                        ),
                       ),
                     ],
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
               )),
             ),
@@ -308,6 +404,10 @@ snapshot_kind: text
                       kind: Ident(Ident(
                         name: "fact_iter",
                       )),
+                      ty: Ty(
+                        id: "[nodeid]",
+                        kind: Infer,
+                      ),
                     ),
                     args: [
                       Expr(
@@ -315,9 +415,17 @@ snapshot_kind: text
                         kind: Ident(Ident(
                           name: "x",
                         )),
+                        ty: Ty(
+                          id: "[nodeid]",
+                          kind: Infer,
+                        ),
                       ),
                     ],
                   )),
+                  ty: Ty(
+                    id: "[nodeid]",
+                    kind: Infer,
+                  ),
                 )),
               )),
             ),

@@ -12,9 +12,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "akyno_ast"
+version = "0.1.0"
+dependencies = [
+ "akyno_util",
+ "internment",
+ "serde",
+]
+
+[[package]]
+name = "akyno_util"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+]
+
+[[package]]
 name = "akynoc"
 version = "0.1.0"
 dependencies = [
+ "akyno_ast",
+ "akyno_util",
  "anyhow",
  "ariadne",
  "chumsky",

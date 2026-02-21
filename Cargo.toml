@@ -1,6 +1,18 @@
 [workspace]
-members = ["akynoc"]
+members = ["akyno_ast", "akyno_util","akynoc"]
 resolver = "3"
+
+[workspace.dependencies]
+akyno_ast = { path = "akyno_ast", version = "0.1.0" }
+akyno_util = { path = "akyno_util", version = "0.1.0" }
+anyhow = "1.0.100"
+ariadne = "0.6.0"
+internment = { version = "0.8.6", features = ["arena", "serde"] }
+ron = "0.12.0"
+serde = { version = "1.0.228", features = ["derive", "rc"] }
+insta = { version = "1.46.0", features = ["glob", "ron", "redactions"] }
+rstest = "0.26.1"
+tempfile = "3.24.0"
 
 [workspace.metadata.release]
 shared-version = true
